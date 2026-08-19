@@ -158,6 +158,11 @@ input,textarea{font-family:inherit;}
 }
 .audit-item:first-of-type{border-top:none; padding-top:2px;}
 .audit-item .qtext{font-size:14.5px; line-height:1.4; margin-bottom:9px; padding-right:4px;}
+.item-note{
+  width:100%; margin-top:9px; padding:9px 11px; border:1.5px solid var(--line); border-radius:9px;
+  font-size:13.5px; color:var(--ink); background:#fcfdfd; resize:vertical; min-height:38px;
+}
+.item-note:focus{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal);}
 .seg{display:flex; gap:6px;}
 .seg button{
   flex:1; padding:9px 0; border-radius:9px; border:1.5px solid var(--line); background:#fff;
@@ -483,6 +488,7 @@ const WARDS = ["W1","W2","W3","W4","W6","ICU","W7","W8"];
 
 let mdroType = "";
 let answers = new Array(CRITERIA.length).fill(null); // 'yes'|'no'|'na'
+let answerNotes = new Array(CRITERIA.length).fill("");
 let likeAppFlag = "Suka";
 let feedbackScore = "";
 
@@ -511,7 +517,8 @@ CRITERIA.forEach((text, i) => {
       <button class="yes" data-i="${i}" data-v="yes">Ya</button>
       <button class="no" data-i="${i}" data-v="no">Tidak</button>
       <button class="na" data-i="${i}" data-v="na">N/A</button>
-    </div>`;
+    </div>
+    <textarea class="item-note" data-note-i="${i}" placeholder="Catatan untuk soalan ini (pilihan)"></textarea>`;
   checklistEl.appendChild(item);
 });
 
@@ -524,6 +531,12 @@ checklistEl.addEventListener('click', e => {
   item.querySelectorAll('button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   updateScore();
+});
+
+checklistEl.addEventListener('input', e => {
+  const ta = e.target.closest('textarea[data-note-i]');
+  if (!ta) return;
+  answerNotes[+ta.dataset.noteI] = ta.value;
 });
 
 // MDRO type dropdown
