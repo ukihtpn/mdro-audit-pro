@@ -1289,7 +1289,8 @@ $('printReportBtn').addEventListener('click', () => {
   setTimeout(() => panel.classList.remove('print-active'), 500);
 });
 
-function buildReportWordHtml(records, stats){
+function buildReportWordHtml(records, stats, photoMap){
+  photoMap = photoMap || {};
   const wardVal = $('reportWardFilter').value;
   const wardLabel = wardVal === 'ALL' ? 'Semua ward' : wardVal;
   let periodLabel = 'Semua tempoh';
@@ -1327,16 +1328,27 @@ function buildReportWordHtml(records, stats){
       const v = (r['q' + idx] || '').toString().toLowerCase();
       const badgeText = v === 'yes' ? 'Ya' : v === 'no' ? 'Tidak' : v === 'na' ? 'N/A' : '—';
       const remark = r['q' + idx + 'Remark'];
-      const photo = r['q' + idx + 'Photo'];
+      const photoUrl = r['q' + idx + 'Photo'];
       html += `<p style="margin:4px 0;"><b>Q${idx}.</b> ${escapeHtml(text)} — <b>${badgeText}</b>${remark ? `<br><i>${escapeHtml(remark)}</i>` : ''}</p>`;
-      if (photo){
-        html += `<p><img src="${photo}" style="width:260px;max-width:100%;border:1px solid #ccc;"></p>`;
+      if (photoUrl){
+        const fileId = extractDriveFileId(photoUrl);
+        const embedded = fileId && photoMap[fileId] ? photoMap[fileId] : '';
+        if (embedded){
+          html += `<p><img src="${embedded}" style="width:260px;max-width:100%;border:1px solid #ccc;"></p>`;
+        } else {
+          html += `<p><i>(Gambar tidak dapat dimuatkan — sila semak sambungan internet semasa jana laporan)</i></p>`;
+        }
       }
     });
     html += `</div>`;
   });
 
   return html;
+}
+
+function extractDriveFileId(url){
+  const m = (url || '').match(/[?&]id=([^&]+)/);
+  return m ? m[1] : null;
 }
 
 function downloadWordDoc(filename, innerHtmlContent){
@@ -1354,12 +1366,42 @@ function downloadWordDoc(filename, innerHtmlContent){
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-$('downloadWordBtn').addEventListener('click', () => {
+async function fetchPhotosBase64(fileIds){
+  if (!fileIds.length || !scriptUrl) return {};
+  try{
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({ action: 'getPhotosBase64', ids: fileIds })
+    });
+    const json = await res.json();
+    return (json && json.photos) ? json.photos : {};
+  }catch(e){
+    return {};
+  }
+}
+
+$('downloadWordBtn').addEventListener('click', async () => {
+  const btn = $('downloadWordBtn');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Memuatkan gambar...';
+
   const records = reportFilteredRecords();
   const stats = computeQuestionStats(records, 'ALL');
-  const html = buildReportWordHtml(records, stats);
+
+  const qKeys = ['q1Photo','q2Photo','q3Photo','q4Photo','q5Photo','q6Photo','q7Photo'];
+  const fileIds = Array.from(new Set(
+    records.flatMap(r => qKeys.map(k => extractDriveFileId(r[k])).filter(Boolean))
+  ));
+  const photoMap = await fetchPhotosBase64(fileIds);
+
+  const html = buildReportWordHtml(records, stats, photoMap);
   const fname = `Laporan_MDRO_${new Date().toISOString().slice(0,10)}.doc`;
   downloadWordDoc(fname, html);
+
+  btn.disabled = false;
+  btn.textContent = originalText;
 });
 
 loadSettings();
