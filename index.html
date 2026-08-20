@@ -111,7 +111,8 @@ input,textarea{font-family:inherit;}
 .ghost-btn:active{background:var(--teal-mist);}
 
 /* Sections */
-.wrap{padding:16px; max-width:560px; margin:0 auto;}
+.wrap{padding:16px; max-width:680px; margin:0 auto;}
+.topbar-inner{max-width:680px; margin:0 auto;}
 .card{
   background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
   padding:16px; margin-bottom:14px;
@@ -162,7 +163,7 @@ input,textarea{font-family:inherit;}
 .photo-row{margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
 .photo-add-btn{
   display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px;
-  border:1.5px dashed var(--line); background:#fff; color:var(--ink-soft); font-size:12.5px; font-weight:700;
+  border:1.5px dashed var(--line); background:#fff; color:var(--ink-soft); font-size:12px; font-weight:700;
 }
 .photo-add-btn svg{width:14px; height:14px;}
 .photo-add-btn.has-photo{border-style:solid; border-color:var(--teal); color:var(--teal-deep);}
@@ -183,7 +184,7 @@ input,textarea{font-family:inherit;}
 .qcol-chart{display:flex; align-items:flex-end; gap:10px; padding:10px 2px 0; overflow-x:auto;}
 .qcol{display:flex; flex-direction:column; align-items:center; flex:1; min-width:34px;}
 .qcol-track{width:100%; max-width:38px; height:140px; display:flex; align-items:flex-end; background:var(--paper); border-radius:8px; overflow:hidden;}
-.qcol-bar{width:100%; border-radius:8px 8px 0 0; background:var(--teal); transition:height .3s ease;}
+.qcol-bar{width:100%; border-radius:8px 8px 0 0; background:var(--teal); transition:height .3s ease; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
 .qcol-bar.warn{background:var(--amber);}
 .qcol-bar.low{background:var(--red);}
 .qcol-pct{font-size:11px; font-weight:700; color:var(--ink-soft); margin-bottom:4px;}
@@ -204,7 +205,7 @@ input,textarea{font-family:inherit;}
 .finding-row{padding:8px 0; border-top:1px dashed var(--line);}
 .finding-row:first-of-type{border-top:1px solid var(--line); margin-top:6px;}
 .finding-q{font-size:12.5px; color:var(--ink); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
-.finding-badge{font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px;}
+.finding-badge{font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
 .finding-badge.ok{background:var(--teal-mist); color:var(--teal-deep);}
 .finding-badge.bad{background:var(--red-mist); color:var(--red);}
 .finding-badge.na{background:#EDEFEE; color:var(--ink-soft);}
@@ -214,7 +215,8 @@ input,textarea{font-family:inherit;}
 .report-summary .stat-big{font-size:26px;}
 
 @media print{
-  body{background:#fff;}
+  body{background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;}
   .topbar, .tabbar, .sync-pill{display:none !important;}
   .tab-panel{display:none !important;}
   #panel-report.print-active{display:block !important;}
@@ -284,7 +286,7 @@ input,textarea{font-family:inherit;}
 }
 .modal-backdrop.show{display:flex;}
 .modal{
-  background:#fff; width:100%; max-width:560px; border-radius:18px 18px 0 0;
+  background:#fff; width:100%; max-width:680px; border-radius:18px 18px 0 0;
   padding:20px 18px calc(20px + env(safe-area-inset-bottom)); max-height:82vh; overflow-y:auto;
 }
 .modal h3{font-family:var(--font-display); margin:0 0 4px; font-size:17px;}
@@ -350,6 +352,7 @@ input,textarea{font-family:inherit;}
 
 
 <div class="topbar">
+  <div class="topbar-inner">
   <div class="topbar-row">
     <div class="brand">
       <span class="eyebrow">Infection Prevention &amp; Control</span>
@@ -372,6 +375,7 @@ input,textarea{font-family:inherit;}
     <button class="tab-btn" data-tab="entry">New Entry</button>
     <button class="tab-btn" data-tab="report">Laporan</button>
     <button class="tab-btn" data-tab="feedback">Feedback Info</button>
+  </div>
   </div>
 </div>
 
@@ -525,6 +529,7 @@ input,textarea{font-family:inherit;}
           </div>
         </div>
         <button class="ghost-btn no-print" id="printReportBtn">Cetak / Simpan PDF</button>
+        <button class="ghost-btn no-print" id="downloadWordBtn">Muat turun Word (.doc)</button>
       </div>
       <div class="card">
         <h2>Pematuhan mengikut soalan</h2>
@@ -635,11 +640,16 @@ CRITERIA.forEach((text, i) => {
       <button class="na" data-i="${i}" data-v="na">N/A</button>
     </div>
     <div class="photo-row" id="photoRow-${i}">
-      <button type="button" class="photo-add-btn" data-i="${i}">
+      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="camera">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Tambah gambar (pilihan)
+        Kamera
       </button>
-      <input type="file" accept="image/*" data-i="${i}" class="photo-input" style="display:none;">
+      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+        Galeri
+      </button>
+      <input type="file" accept="image/*" capture="environment" data-i="${i}" class="photo-input-camera" style="display:none;">
+      <input type="file" accept="image/*" data-i="${i}" class="photo-input-gallery" style="display:none;">
     </div>
     <div class="remark-row">
       <textarea data-i="${i}" class="remark-input" placeholder="Catatan (pilihan)"></textarea>
@@ -661,7 +671,8 @@ checklistEl.addEventListener('click', e => {
   const addBtn = e.target.closest('.photo-add-btn');
   if (addBtn){
     const i = +addBtn.dataset.i;
-    checklistEl.querySelector(`.photo-input[data-i="${i}"]`).click();
+    const selector = addBtn.dataset.mode === 'camera' ? '.photo-input-camera' : '.photo-input-gallery';
+    checklistEl.querySelector(`${selector}[data-i="${i}"]`).click();
     return;
   }
   const removeBtn = e.target.closest('.photo-remove');
@@ -673,7 +684,7 @@ checklistEl.addEventListener('click', e => {
 });
 
 checklistEl.addEventListener('change', async e => {
-  const input = e.target.closest('.photo-input');
+  const input = e.target.closest('.photo-input-camera, .photo-input-gallery');
   if (!input || !input.files || !input.files[0]) return;
   const i = +input.dataset.i;
   try{
@@ -693,24 +704,33 @@ checklistEl.addEventListener('input', e => {
 
 function renderPhotoRow(i){
   const row = $('photoRow-' + i);
+  const inputs = `
+      <input type="file" accept="image/*" capture="environment" data-i="${i}" class="photo-input-camera" style="display:none;">
+      <input type="file" accept="image/*" data-i="${i}" class="photo-input-gallery" style="display:none;">`;
   if (photos[i]){
     row.innerHTML = `
       <div class="photo-thumb-wrap">
         <img class="photo-thumb" src="${photos[i]}">
         <button type="button" class="photo-remove" data-i="${i}">&times;</button>
       </div>
-      <button type="button" class="photo-add-btn has-photo" data-i="${i}">
+      <button type="button" class="photo-add-btn has-photo" data-i="${i}" data-mode="camera">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Tukar gambar
+        Kamera
       </button>
-      <input type="file" accept="image/*" data-i="${i}" class="photo-input" style="display:none;">`;
+      <button type="button" class="photo-add-btn has-photo" data-i="${i}" data-mode="gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+        Galeri
+      </button>${inputs}`;
   } else {
     row.innerHTML = `
-      <button type="button" class="photo-add-btn" data-i="${i}">
+      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="camera">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Tambah gambar (pilihan)
+        Kamera
       </button>
-      <input type="file" accept="image/*" data-i="${i}" class="photo-input" style="display:none;">`;
+      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+        Galeri
+      </button>${inputs}`;
   }
 }
 
@@ -1267,6 +1287,79 @@ $('printReportBtn').addEventListener('click', () => {
   panel.classList.add('print-active');
   window.print();
   setTimeout(() => panel.classList.remove('print-active'), 500);
+});
+
+function buildReportWordHtml(records, stats){
+  const wardVal = $('reportWardFilter').value;
+  const wardLabel = wardVal === 'ALL' ? 'Semua ward' : wardVal;
+  let periodLabel = 'Semua tempoh';
+  if (reportPeriodMode === 'month' && reportPeriodValue){
+    const [y, mo] = reportPeriodValue.split('-');
+    periodLabel = MONTH_NAMES_MS[(+mo)-1] + ' ' + y;
+  } else if (reportPeriodMode === 'epidweek' && reportPeriodValue){
+    periodLabel = reportPeriodValue.replace('-', ' ');
+  }
+  let sum = 0, count = 0;
+  records.forEach(r => { const p = Number(r.compliancePercent); if (!isNaN(p)){ sum += p; count++; } });
+  const overallPct = count ? Math.round(sum / count) + '%' : '—';
+  const genDate = new Date().toLocaleDateString('ms-MY');
+  const F = "font-family:Calibri,Arial,sans-serif;";
+
+  let html = `<h1 style="${F}color:#402A87;">Laporan Audit MDRO</h1>
+  <p style="${F}"><b>Ward:</b> ${escapeHtml(wardLabel)} &nbsp;&nbsp; <b>Tempoh:</b> ${escapeHtml(periodLabel)} &nbsp;&nbsp; <b>Tarikh jana:</b> ${genDate}</p>
+  <p style="${F}"><b>Purata Pematuhan:</b> ${overallPct} &nbsp;&nbsp; <b>Jumlah Audit:</b> ${records.length}</p>
+  <h2 style="${F}color:#402A87;">Pematuhan Mengikut Soalan</h2>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;${F}width:100%;">
+    <tr style="background:#EFE7FC;"><th>Soalan</th><th>% Pematuhan</th><th>Bil. Dinilai</th></tr>
+    ${stats.map((s,i) => `<tr><td>Q${i+1}. ${escapeHtml(s.label)}</td><td align="center">${s.pct === null ? '—' : s.pct + '%'}</td><td align="center">${s.applicable}</td></tr>`).join('')}
+  </table>
+  <h2 style="${F}color:#402A87;">Butiran Finding</h2>`;
+
+  if (!records.length){
+    html += `<p style="${F}">Tiada audit untuk tempoh/ward dipilih.</p>`;
+  }
+
+  records.forEach(r => {
+    html += `<div style="margin-top:14px; padding-top:8px; border-top:1px solid #ccc; ${F}">
+      <p><b>${escapeHtml(r.ward)}</b> — ${escapeHtml(r.date || '')} — ${escapeHtml(r.auditor || '')}${r.mdroType ? ' · ' + escapeHtml(r.mdroType) : ''} — ${r.compliancePercent !== undefined && r.compliancePercent !== '' ? r.compliancePercent + '%' : ''}</p>`;
+    CRITERIA.forEach((text, i) => {
+      const idx = i + 1;
+      const v = (r['q' + idx] || '').toString().toLowerCase();
+      const badgeText = v === 'yes' ? 'Ya' : v === 'no' ? 'Tidak' : v === 'na' ? 'N/A' : '—';
+      const remark = r['q' + idx + 'Remark'];
+      const photo = r['q' + idx + 'Photo'];
+      html += `<p style="margin:4px 0;"><b>Q${idx}.</b> ${escapeHtml(text)} — <b>${badgeText}</b>${remark ? `<br><i>${escapeHtml(remark)}</i>` : ''}</p>`;
+      if (photo){
+        html += `<p><img src="${photo}" style="width:260px;max-width:100%;border:1px solid #ccc;"></p>`;
+      }
+    });
+    html += `</div>`;
+  });
+
+  return html;
+}
+
+function downloadWordDoc(filename, innerHtmlContent){
+  const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Laporan</title></head><body>";
+  const postHtml = "</body></html>";
+  const fullHtml = preHtml + innerHtmlContent + postHtml;
+  const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$('downloadWordBtn').addEventListener('click', () => {
+  const records = reportFilteredRecords();
+  const stats = computeQuestionStats(records, 'ALL');
+  const html = buildReportWordHtml(records, stats);
+  const fname = `Laporan_MDRO_${new Date().toISOString().slice(0,10)}.doc`;
+  downloadWordDoc(fname, html);
 });
 
 loadSettings();
