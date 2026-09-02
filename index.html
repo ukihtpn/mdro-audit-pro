@@ -160,6 +160,7 @@ input,textarea{font-family:inherit;}
 }
 .audit-item:first-of-type{border-top:none; padding-top:2px;}
 .audit-item .qtext{font-size:14.5px; line-height:1.4; margin-bottom:9px; padding-right:4px;}
+.accordion-item .accordion-head .qtext{margin-bottom:0; font-weight:700;}
 .photo-row{margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
 .photo-add-btn{
   display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px;
@@ -339,6 +340,21 @@ input,textarea{font-family:inherit;}
 .splash-dots span:nth-child(3){animation-delay:.3s;}
 @keyframes splashPop{from{transform:scale(.8); opacity:0;} to{transform:scale(1); opacity:1;}}
 @keyframes splashBlink{0%,80%,100%{opacity:.35;} 40%{opacity:1;}}
+
+/* Login gate */
+.login-gate{
+  position:fixed; inset:0; z-index:90; background:linear-gradient(160deg, var(--teal-deep), var(--teal) 65%, #8A6BD9);
+  display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px;
+}
+.login-gate.show{display:flex;}
+.login-card{background:#fff; border-radius:18px; padding:24px 20px; width:100%; max-width:360px; box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.login-card h2{margin:0 0 4px; color:var(--teal-deep); font-family:var(--font-display); font-size:18px; text-align:center;}
+.login-card p{margin:0 0 16px; text-align:center; color:var(--ink-soft); font-size:12.5px;}
+.login-btn{
+  display:block; width:100%; padding:12px 14px; margin-bottom:8px; border-radius:11px; border:1.5px solid var(--line);
+  background:#fff; color:var(--ink); font-weight:700; font-size:14px; text-align:left;
+}
+.login-btn:active{background:var(--teal-mist); border-color:var(--teal);}
 </style>
 </head>
 <body>
@@ -348,6 +364,19 @@ input,textarea{font-family:inherit;}
   <div class="splash-title">MDRO PRO AUDIT</div>
   <div class="splash-tagline">Check &bull; Comply &bull; Improve</div>
   <div class="splash-dots"><span></span><span></span><span></span></div>
+</div>
+
+<div class="login-gate" id="loginGate">
+  <div class="login-card">
+    <h2>Log Masuk</h2>
+    <p>Pilih nama anda untuk teruskan</p>
+    <button type="button" class="login-btn" data-name="Dr Aneesa">Dr Aneesa</button>
+    <button type="button" class="login-btn" data-name="Dr Saihah">Dr Saihah</button>
+    <button type="button" class="login-btn" data-name="Dr Zaila">Dr Zaila</button>
+    <button type="button" class="login-btn" data-name="ICN Maria">ICN Maria</button>
+    <button type="button" class="login-btn" data-name="ICN Mariam">ICN Mariam</button>
+    <button type="button" class="login-btn" data-name="ICN Rosena">ICN Rosena</button>
+  </div>
 </div>
 
 
@@ -373,6 +402,7 @@ input,textarea{font-family:inherit;}
   <div class="tabbar">
     <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
     <button class="tab-btn" data-tab="entry">New Entry</button>
+    <button class="tab-btn" data-tab="cleaner">Ask Cleaner</button>
     <button class="tab-btn" data-tab="report">Laporan</button>
     <button class="tab-btn" data-tab="feedback">Feedback Info</button>
   </div>
@@ -400,6 +430,12 @@ input,textarea{font-family:inherit;}
         <div class="stat-big">—</div>
         <div class="stat-label">Memuatkan data...</div>
       </div>
+    </div>
+    <div class="card">
+      <h2>Audit belum lengkap (Draft)</h2>
+      <div class="stat-big" id="draftCount" style="color:var(--amber);">—</div>
+      <div class="stat-label">audit perlu dilengkapkan (interview staf / tandatangan)</div>
+      <div id="draftList" style="margin-top:10px;"></div>
     </div>
     <div class="card">
       <h2>Pematuhan by ward</h2>
@@ -430,7 +466,14 @@ input,textarea{font-family:inherit;}
 
   <div class="tab-panel" id="panel-entry">
   <div class="card">
-    <h2><span class="num">1</span>Butiran audit</h2>
+    <h2><span class="num">1</span>Auditor</h2>
+    <div class="field">
+      <div class="auditor-display" id="auditorDisplay" style="font-weight:800; color:var(--teal-deep); font-size:15px;">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>Butiran Pesakit</h2>
     <div class="field">
       <label for="ward">Ward</label>
       <select id="ward">
@@ -446,40 +489,123 @@ input,textarea{font-family:inherit;}
       </select>
     </div>
     <div class="field">
-      <label for="date">Tarikh</label>
-      <input type="date" id="date">
+      <label for="bed">Bed</label>
+      <input type="text" id="bed" placeholder="No. katil">
     </div>
     <div class="field">
-      <label for="auditor">Auditor</label>
-      <select id="auditor">
-        <option value="">Pilih auditor</option>
-        <option value="ICN Maria">ICN Maria</option>
-        <option value="ICN Mariam">ICN Mariam</option>
-        <option value="ICN Rosena">ICN Rosena</option>
-        <option value="Dr Saihah">Dr Saihah</option>
-        <option value="Dr Aneesa">Dr Aneesa</option>
-        <option value="Dr Zaila">Dr Zaila</option>
-      </select>
+      <label>Tarikh audit</label>
+      <div style="font-weight:700; color:var(--ink);" id="dateDisplay">—</div>
+    </div>
+
+    <div class="field" style="margin-top:14px;">
+      <label>Imbas label pesakit (OCR)</label>
+      <div class="photo-row">
+        <button type="button" class="photo-add-btn" data-mode="camera" id="ocrCameraBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          Kamera
+        </button>
+        <button type="button" class="photo-add-btn" data-mode="gallery" id="ocrGalleryBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+          Galeri
+        </button>
+        <input type="file" accept="image/*" capture="environment" id="ocrInputCamera" style="display:none;">
+        <input type="file" accept="image/*" id="ocrInputGallery" style="display:none;">
+      </div>
+      <div class="dash-note" id="ocrStatus">Imbas label pesakit untuk auto-isi Nama/IC/RN/Tarikh Admission (semak semula ketepatan).</div>
+    </div>
+
+    <div class="field">
+      <label for="patientName">Nama pesakit</label>
+      <input type="text" id="patientName" placeholder="Nama penuh pesakit">
     </div>
     <div class="field">
-      <label for="mdroType">Jenis MDRO</label>
-      <select id="mdroType">
-        <option value="">Pilih jenis MDRO</option>
+      <label for="patientIC">No. IC</label>
+      <input type="text" id="patientIC" placeholder="No. Kad Pengenalan">
+    </div>
+    <div class="field">
+      <label for="patientRN">RN</label>
+      <input type="text" id="patientRN" placeholder="Nombor rekod (RN)">
+    </div>
+    <div class="field">
+      <label for="admissionDate">Tarikh admission</label>
+      <input type="date" id="admissionDate">
+    </div>
+    <div class="field">
+      <label for="organism">Kuman (isolate organism)</label>
+      <select id="organism">
+        <option value="">Pilih kuman</option>
         <option value="MRSA">MRSA</option>
         <option value="CRE">CRE</option>
-        <option value="A.B MRO">A.B MRO</option>
-        <option value="ESBL KPN">ESBL KPN</option>
-        <option value="ESBL E.coli">ESBL E.coli</option>
+        <option value="ESBL K.PNEUMONIAE">ESBL K. PNEUMONIAE</option>
+        <option value="ESBL E.COLI">ESBL E. COLI</option>
+        <option value="MRO">MRO</option>
+        <option value="A.BAUMANNII">A. BAUMANNII</option>
         <option value="VRE">VRE</option>
-        <option value="Others">Others</option>
+        <option value="Lain-lain">Lain-lain</option>
       </select>
-      <input type="text" class="chip-other-input" id="mdroOtherInput" placeholder="Nyatakan jenis MDRO" style="margin-top:8px; width:100%; border-radius:9px;">
+      <input type="text" class="chip-other-input" id="organismOtherInput" placeholder="Nyatakan kuman" style="margin-top:8px; width:100%; border-radius:9px; display:none;">
     </div>
   </div>
 
   <div class="card">
-    <h2><span class="num">2</span>Audit pematuhan</h2>
+    <h2><span class="num">3</span>Audit Pematuhan</h2>
+    <div class="dash-note" id="progressNote">0 / 9 soalan lengkap</div>
     <div id="checklist"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>Tandatangan Jururawat Y/M</h2>
+    <canvas id="sigPad" width="600" height="180" style="width:100%; height:140px; border:1.5px solid var(--line); border-radius:12px; touch-action:none; background:#fff;"></canvas>
+    <button type="button" class="ghost-btn" id="clearSigBtn" style="margin-top:8px;">Kosongkan tandatangan</button>
+  </div>
+  </div>
+
+  <div class="tab-panel" id="panel-cleaner">
+  <div class="card">
+    <h2><span class="num">1</span>Ask Cleaner</h2>
+    <div class="field">
+      <label for="cleanerWard">Ward</label>
+      <select id="cleanerWard">
+        <option value="">Pilih ward</option>
+        <option value="W1">W1</option>
+        <option value="W2">W2</option>
+        <option value="W3">W3</option>
+        <option value="W4">W4</option>
+        <option value="W6">W6</option>
+        <option value="ICU">ICU</option>
+        <option value="W7">W7</option>
+        <option value="W8">W8</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="cleanerName">Nama cleaner (pilihan)</label>
+      <input type="text" id="cleanerName" placeholder="Nama cleaner yang ditemubual">
+    </div>
+  </div>
+  <div class="card">
+    <h2><span class="num">2</span>Soalan</h2>
+    <div class="qtext" style="margin-bottom:10px;">Cleaner telah dimaklumkan berkenaan kes MDRO, peralatan lengkap, pembersihan harian dilakukan mengikut bancuhan disinfectant yang betul, dan penggunaan PPE yang betul semasa pembersihan?</div>
+    <div class="seg">
+      <button class="yes" id="cleanerYesBtn" data-v="yes">Ya</button>
+      <button class="no" id="cleanerNoBtn" data-v="no">Tidak</button>
+    </div>
+    <div class="photo-row" id="cleanerPhotoRow" style="margin-top:12px;">
+      <button type="button" class="photo-add-btn" data-mode="camera" id="cleanerCameraBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        Kamera
+      </button>
+      <button type="button" class="photo-add-btn" data-mode="gallery" id="cleanerGalleryBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+        Galeri
+      </button>
+      <input type="file" accept="image/*" capture="environment" id="cleanerInputCamera" style="display:none;">
+      <input type="file" accept="image/*" id="cleanerInputGallery" style="display:none;">
+    </div>
+    <div id="cleanerPhotoThumbs" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+    <div class="remark-row">
+      <textarea id="cleanerRemark" placeholder="Catatan (pilihan, terutama jika jawapan Tidak)"></textarea>
+    </div>
+    <button class="submit-btn" id="cleanerSubmitBtn" style="margin-top:14px;">Hantar</button>
   </div>
   </div>
 
@@ -596,145 +722,249 @@ input,textarea{font-family:inherit;}
 
 <script>
 const CRITERIA = [
-  "MDRO checklist tersedia dalam case note pesakit",
-  "MDRO checklist diisi dengan lengkap dan betul",
-  "MDRO signage tersedia di zon pesakit",
-  "Signage / precaution MDRO yang betul dipamerkan",
-  "PPE station tersedia diluar zon pesakit",
-  "Stok PPE lengkap dan mudah didapati",
-  "Bin sisa klinikal tersedia di zon pesakit"
+  { title: "Kesediaan & Kelengkapan Borang MDRO Checklist",
+    trainingQuestion: "Pernah menghadiri kursus/latihan berkaitan kawalan infeksi atau penggunaan borang MDRO checklist ini?",
+    items: [
+      "Borang MDRO checklist terdapat dalam BHT di nursing cardex",
+      { text: "Borang MDRO checklist diisi dengan lengkap", dependsOnPrev: true }
+    ],
+    comp: [
+      "Adakah staff tahu di mana borang MDRO checklist perlu disimpan (BHT/nursing cardex)?",
+      "Adakah staff tahu bila borang MDRO checklist perlu mula diisi?",
+      "Adakah staff faham kepentingan mengisi borang checklist dengan lengkap dan tepat pada masanya?"
+    ] },
+  { title: "Pengasingan Pesakit: Bilik Isolasi / Isolasi Cohort",
+    items: [
+      "Penempatan pesakit diasingkan (bilik isolasi/kohort)",
+      "Jarak 1.5m antara katil",
+      "Langsir tidak menyentuh katil",
+      "Kabinet/meja kardiak tidak menyentuh/berkongsi dengan persekitaran lain",
+      "Persekitaran katil bersih"
+    ],
+    comp: [
+      "Adakah staff mengetahui kriteria pesakit yang perlu diasingkan (isolasi/kohort)?",
+      "Adakah staff faham keperluan jarak minimum 1.5m antara katil pesakit isolasi?",
+      "Adakah staff faham langkah pembersihan persekitaran katil isolasi?"
+    ] },
+  { title: "Letakkan Signage: Contact / Airborne / Droplet (Standard & Appropriate)",
+    items: [
+      "Papan tanda yang betul mengikut cara penularan",
+      "Signage jelas/boleh dilihat",
+      "Signage standard digunakan",
+      "HCW sedar tentang papan tanda"
+    ],
+    comp: [
+      "Adakah staff mengetahui jenis signage yang betul mengikut cara penularan (contact/droplet/airborne)?",
+      "Adakah staff tahu lokasi signage standard perlu dipamerkan?",
+      "Adakah staff faham tindakan yang perlu diambil bila signage tiada/rosak?"
+    ] },
+  { title: "Amalan 5 Moments Hand Hygiene: ABHR disediakan berdekatan katil pesakit",
+    items: [
+      "ABHR dalam bracket di meja kardiak/katil",
+      "ABHR tidak kosong",
+      "ABHR berfungsi",
+      "Botol ABHR bersih",
+      "Ada tarikh buka pada botol ABHR"
+    ],
+    comp: [
+      "Adakah staff faham konsep 5 Moments Hand Hygiene?",
+      "Adakah staff tahu cara memeriksa tarikh luput/tarikh buka ABHR?",
+      "Adakah staff tahu tindakan bila ABHR kosong/tidak berfungsi?"
+    ] },
+  { title: "Penyediaan Troli PPE (Glove, ABHR, Gown, Surface Wipe, N95 Mask, dll)",
+    items: [
+      "Lokasi troli/kabinet PPE betul",
+      "Item lengkap dalam troli (Glove/ABHR/Gown/Wipe/N95/dll)",
+      "Troli PPE tersedia & bersih",
+      "Troli tidak kotor",
+      "Tiada item tidak berkaitan dalam troli"
+    ],
+    comp: [
+      "Adakah staff tahu item wajib dalam troli PPE mengikut jenis isolasi?",
+      "Adakah staff faham tatacara donning & doffing PPE yang betul?",
+      "Adakah staff faham kekerapan penyemakan & penambahan stok troli PPE?"
+    ] },
+  { title: "Penyediaan Peralatan Perubatan Khas untuk Pesakit (BP Monitor, Stetoskop, Infusion Pump, dll)",
+    items: [
+      "Nyahkuman dilakukan selepas setiap penggunaan",
+      "Ketersediaan peralatan perubatan khusus untuk pesakit"
+    ],
+    comp: [
+      "Adakah staff tahu peralatan perubatan perlu didedikasikan untuk pesakit MDRO?",
+      "Adakah staff faham kaedah nyahkuman peralatan selepas digunakan?",
+      "Adakah staff faham risiko perkongsian peralatan antara pesakit?"
+    ] },
+  { title: "Penyediaan Tong Sisa Klinikal di Zon Pesakit (untuk doffing PPE)",
+    items: [
+      "Tersedia di zon pesakit",
+      "Tidak melebihi ¾ penuh",
+      "Bersih",
+      "Berfungsi",
+      "Dilapik dengan plastik biohazard"
+    ],
+    comp: [
+      "Adakah staff faham pengelasan sisa klinikal berbanding sisa am?",
+      "Adakah staff tahu had penuh tong sisa klinikal (¾ penuh) sebelum ditukar?",
+      "Adakah staff faham prosedur doffing PPE berkaitan lokasi tong sisa?"
+    ] },
+  { title: "Letakkan 'Tag' pada BHT, Surat Rujukan / Discaj Note",
+    items: [
+      "Tersedia",
+      "Jelas/boleh dilihat",
+      "Cop yang betul"
+    ],
+    comp: [
+      "Adakah staff tahu tujuan tag/cop pada BHT/surat rujukan?",
+      "Adakah staff faham bila tag perlu diletakkan (semasa admission/discaj/rujukan)?",
+      "Adakah staff tahu risiko jika tag tidak diletakkan?"
+    ] },
+  { title: "Penggunaan Mandian Harian (Chlorhexidine 4% Bath / 2% Wipes / Octenisan Wash)",
+    items: [
+      "Tersedia",
+      "Penggunaan yang betul",
+      "Tunjuk ajar diberikan kepada pesakit"
+    ],
+    comp: [
+      "Adakah staff faham tujuan mandian chlorhexidine/octenisan untuk pesakit MDRO?",
+      "Adakah staff tahu kekerapan & kaedah penggunaan yang betul?",
+      "Adakah staff faham cara memberi tunjuk ajar kepada pesakit?"
+    ] },
+  { title: "Pendidikan Pesakit & Penjaga: kes jangkitan, kebersihan diri & hadkan pergerakan",
+    items: [
+      "Pesakit dimaklumkan (kes jangkitan, kebersihan diri, hadkan pergerakan)",
+      { text: "Risalah diberikan (risalah CRE)", allowNA: true }
+    ],
+    comp: [
+      "Adakah staff faham kandungan penerangan yang perlu diberi kepada pesakit/penjaga?",
+      "Adakah staff tahu had pergerakan yang perlu dimaklumkan kepada pesakit?",
+      "Adakah staff tahu bila risalah CRE perlu diberikan?"
+    ] }
 ];
 const WARDS = ["W1","W2","W3","W4","W6","ICU","W7","W8"];
+const ORGANISMS = ["MRSA","CRE","ESBL K.PNEUMONIAE","ESBL E.COLI","MRO","A.BAUMANNII","VRE","Lain-lain"];
 
-let mdroType = "";
-let answers = new Array(CRITERIA.length).fill(null); // 'yes'|'no'|'na'
-let photos = new Array(CRITERIA.length).fill(null); // dataURL (compressed) or null
-let remarks = new Array(CRITERIA.length).fill(''); // catatan pilihan setiap soalan
+let currentAuditor = "";
+// subAnswers[i][j] = 'yes'|'no'|'na'|null  — jawapan per sub-item (setiap sub-item = 1 markah)
+let subAnswers = CRITERIA.map(c => new Array(c.items.length).fill(null));
+// subPhotos[i][j] = array of dataURL (boleh banyak gambar bukti/finding per sub-item)
+let subPhotos = CRITERIA.map(c => c.items.map(() => []));
+let remarks = new Array(CRITERIA.length).fill(''); // catatan per kategori (pilihan)
+let followUps = CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
+let openIndex = -1; // accordion: hanya satu kategori terbuka pada satu masa
+let signatureDataUrl = '';
+let organism = '';
 let likeAppFlag = "Suka";
 let feedbackScore = "";
 
+function itemText(it){ return typeof it === 'string' ? it : it.text; }
+function itemAllowNA(it){ return typeof it === 'string' ? false : !!it.allowNA; }
+function categoryHasTidak(i){ return subAnswers[i].some(a => a === 'no'); }
+function categoryAllAnswered(i){ return subAnswers[i].every(a => a !== null); }
+
 const $ = id => document.getElementById(id);
-$('date').value = new Date().toISOString().slice(0,10);
 
-$('auditor').addEventListener('change', () => {
-  const name = $('auditor').value;
-  const badge = $('auditorBadge');
-  if (name){
-    $('auditorBadgeName').textContent = name;
-    badge.style.display = 'inline-flex';
-  } else {
-    badge.style.display = 'none';
-  }
-});
-
-// Build checklist UI
-const checklistEl = $('checklist');
-CRITERIA.forEach((text, i) => {
-  const item = document.createElement('div');
-  item.className = 'audit-item';
-  item.innerHTML = `
-    <div class="qtext">${i+1}. ${text}</div>
-    <div class="seg">
-      <button class="yes" data-i="${i}" data-v="yes">Ya</button>
-      <button class="no" data-i="${i}" data-v="no">Tidak</button>
-      <button class="na" data-i="${i}" data-v="na">N/A</button>
-    </div>
-    <div class="photo-row" id="photoRow-${i}">
-      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="camera">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Kamera
-      </button>
-      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="gallery">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
-        Galeri
-      </button>
-      <input type="file" accept="image/*" capture="environment" data-i="${i}" class="photo-input-camera" style="display:none;">
-      <input type="file" accept="image/*" data-i="${i}" class="photo-input-gallery" style="display:none;">
-    </div>
-    <div class="remark-row">
-      <textarea data-i="${i}" class="remark-input" placeholder="Catatan (pilihan)"></textarea>
-    </div>`;
-  checklistEl.appendChild(item);
-});
-
-checklistEl.addEventListener('click', e => {
-  const btn = e.target.closest('button[data-i]:not(.photo-add-btn)');
-  if (btn){
-    const i = +btn.dataset.i, v = btn.dataset.v;
-    answers[i] = v;
-    const item = btn.closest('.audit-item');
-    item.querySelectorAll('.seg button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    updateScore();
-    return;
-  }
-  const addBtn = e.target.closest('.photo-add-btn');
-  if (addBtn){
-    const i = +addBtn.dataset.i;
-    const selector = addBtn.dataset.mode === 'camera' ? '.photo-input-camera' : '.photo-input-gallery';
-    checklistEl.querySelector(`${selector}[data-i="${i}"]`).click();
-    return;
-  }
-  const removeBtn = e.target.closest('.photo-remove');
-  if (removeBtn){
-    const i = +removeBtn.dataset.i;
-    photos[i] = null;
-    renderPhotoRow(i);
-  }
-});
-
-checklistEl.addEventListener('change', async e => {
-  const input = e.target.closest('.photo-input-camera, .photo-input-gallery');
-  if (!input || !input.files || !input.files[0]) return;
-  const i = +input.dataset.i;
+// ---- Login gate ----
+async function initLogin(){
+  let saved = '';
   try{
-    photos[i] = await compressImageToDataUrl(input.files[0]);
-    renderPhotoRow(i);
-  }catch(err){
-    showToast('Gagal muat naik gambar, cuba lagi.', true);
-  }
-  input.value = '';
-});
-
-checklistEl.addEventListener('input', e => {
-  const ta = e.target.closest('.remark-input');
-  if (!ta) return;
-  remarks[+ta.dataset.i] = ta.value;
-});
-
-function renderPhotoRow(i){
-  const row = $('photoRow-' + i);
-  const inputs = `
-      <input type="file" accept="image/*" capture="environment" data-i="${i}" class="photo-input-camera" style="display:none;">
-      <input type="file" accept="image/*" data-i="${i}" class="photo-input-gallery" style="display:none;">`;
-  if (photos[i]){
-    row.innerHTML = `
-      <div class="photo-thumb-wrap">
-        <img class="photo-thumb" src="${photos[i]}">
-        <button type="button" class="photo-remove" data-i="${i}">&times;</button>
-      </div>
-      <button type="button" class="photo-add-btn has-photo" data-i="${i}" data-mode="camera">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Kamera
-      </button>
-      <button type="button" class="photo-add-btn has-photo" data-i="${i}" data-mode="gallery">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
-        Galeri
-      </button>${inputs}`;
+    const r = await window.storage.get('mdro-auditor', false);
+    if (r && r.value) saved = r.value;
+  }catch(e){ saved = ''; }
+  if (saved){
+    currentAuditor = saved;
+    applyAuditor();
   } else {
-    row.innerHTML = `
-      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="camera">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Kamera
-      </button>
-      <button type="button" class="photo-add-btn" data-i="${i}" data-mode="gallery">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
-        Galeri
-      </button>${inputs}`;
+    $('loginGate').classList.add('show');
   }
 }
+document.querySelectorAll('.login-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    currentAuditor = btn.dataset.name;
+    try{ await window.storage.set('mdro-auditor', currentAuditor, false); }catch(e){}
+    applyAuditor();
+    $('loginGate').classList.remove('show');
+  });
+});
+function applyAuditor(){
+  $('auditorDisplay').textContent = currentAuditor;
+  const badge = $('auditorBadge');
+  $('auditorBadgeName').textContent = currentAuditor;
+  badge.style.display = 'inline-flex';
+}
 
-// Resize + compress image before upload (keeps mobile data usage & sheet payload kecil)
+$('dateDisplay').textContent = new Date().toLocaleDateString('ms-MY');
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+// Kuman (organism) dropdown
+$('organism').addEventListener('change', () => {
+  organism = $('organism').value;
+  $('organismOtherInput').style.display = organism === 'Lain-lain' ? 'block' : 'none';
+  if (organism === 'Lain-lain') $('organismOtherInput').focus();
+});
+
+// ---- OCR: imbas label pesakit (best-effort, guna Tesseract.js — percuma, jalan dalam browser) ----
+function triggerOcrPick(mode){
+  (mode === 'camera' ? $('ocrInputCamera') : $('ocrInputGallery')).click();
+}
+$('ocrCameraBtn').addEventListener('click', () => triggerOcrPick('camera'));
+$('ocrGalleryBtn').addEventListener('click', () => triggerOcrPick('gallery'));
+
+async function ensureTesseract(){
+  if (window.Tesseract) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('load fail'));
+    document.head.appendChild(s);
+  });
+}
+
+function parseOcrText(text){
+  const out = {};
+  let m = text.match(/(\d{6}-\d{2}-\d{4})/);
+  if (m) out.ic = m[1];
+  else { m = text.match(/\b(\d{12})\b/); if (m) out.ic = m[1]; }
+  m = text.match(/R\W?N[:\s]*([A-Z0-9\/\-]{3,15})/i);
+  if (m) out.rn = m[1];
+  m = text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+  if (m) out.admissionDate = m[1];
+  m = text.match(/NAMA\s*[:\-]?\s*([A-Z][A-Z .'\/]{3,40})/i);
+  if (m) out.name = m[1].trim();
+  return out;
+}
+
+async function handleOcrFile(file){
+  $('ocrStatus').textContent = 'Mengimbas gambar... (mungkin ambil masa)';
+  try{
+    await ensureTesseract();
+    const dataUrl = await compressImageToDataUrl(file, 1400, 0.85);
+    const result = await window.Tesseract.recognize(dataUrl, 'eng');
+    const text = result && result.data ? result.data.text : '';
+    const parsed = parseOcrText(text);
+    if (parsed.name && !$('patientName').value) $('patientName').value = parsed.name;
+    if (parsed.ic && !$('patientIC').value) $('patientIC').value = parsed.ic;
+    if (parsed.rn && !$('patientRN').value) $('patientRN').value = parsed.rn;
+    if (parsed.admissionDate){
+      const dparts = parsed.admissionDate.split(/[\/\-]/);
+      if (dparts.length === 3){
+        let [d,mo,y] = dparts;
+        if (y.length === 2) y = '20' + y;
+        const iso = `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+        if (!isNaN(new Date(iso).getTime())) $('admissionDate').value = iso;
+      }
+    }
+    $('ocrStatus').textContent = Object.keys(parsed).length
+      ? 'Imbasan selesai — sila SEMAK & betulkan medan di bawah jika perlu.'
+      : 'Imbasan selesai — tiada medan dapat dikesan automatik, sila isi manual.';
+  }catch(err){
+    $('ocrStatus').textContent = 'Gagal imbas gambar. Sila isi medan secara manual.';
+  }
+}
+$('ocrInputCamera').addEventListener('change', e => { if (e.target.files[0]) handleOcrFile(e.target.files[0]); e.target.value=''; });
+$('ocrInputGallery').addEventListener('change', e => { if (e.target.files[0]) handleOcrFile(e.target.files[0]); e.target.value=''; });
+
+// ---- Resize + compress image before upload ----
 function compressImageToDataUrl(file, maxDim = 900, quality = 0.6){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -759,11 +989,251 @@ function compressImageToDataUrl(file, maxDim = 900, quality = 0.6){
   });
 }
 
-// MDRO type dropdown
-$('mdroType').addEventListener('change', () => {
-  mdroType = $('mdroType').value;
-  $('mdroOtherInput').classList.toggle('show', mdroType === 'Others');
-  if (mdroType === 'Others') $('mdroOtherInput').focus();
+// ---- Accordion checklist dengan sub-item bermarkah (setiap sub-item = 1 markah) ----
+const checklistEl = $('checklist');
+
+function totalItemCount(){ return CRITERIA.reduce((n, c) => n + c.items.length, 0); }
+function updateProgressNote(){
+  const done = subAnswers.reduce((n, arr) => n + arr.filter(a => a !== null).length, 0);
+  $('progressNote').textContent = `${done} / ${totalItemCount()} soalan lengkap`;
+}
+
+function itemDependsOnPrev(it){ return typeof it === 'string' ? false : !!it.dependsOnPrev; }
+
+// Auto-tetapkan sub-item bergantung (dependsOnPrev) jadi 'skip' bila item sebelumnya "Tidak"
+function syncDependentSkips(){
+  CRITERIA.forEach((c, i) => {
+    c.items.forEach((it, j) => {
+      if (itemDependsOnPrev(it)){
+        if (subAnswers[i][j-1] === 'no'){
+          subAnswers[i][j] = 'skip';
+        } else if (subAnswers[i][j] === 'skip'){
+          subAnswers[i][j] = null; // buka semula bila item sebelumnya bukan Tidak lagi
+        }
+      }
+    });
+  });
+}
+
+function renderChecklist(){
+  syncDependentSkips();
+  checklistEl.innerHTML = '';
+  CRITERIA.forEach((c, i) => {
+    const item = document.createElement('div');
+    item.className = 'audit-item accordion-item';
+    const isOpen = openIndex === i;
+    const answeredCount = subAnswers[i].filter(a => a !== null).length;
+    const compliantCount = subAnswers[i].filter(a => a === 'yes').length;
+
+    const subRows = c.items.map((it, j) => {
+      const text = itemText(it);
+      const allowNA = itemAllowNA(it);
+      const isSkipped = subAnswers[i][j] === 'skip';
+      if (isSkipped){
+        return `<div class="sub-item" style="padding:10px 0; border-top:1px solid var(--line); opacity:.55;">
+          <div class="qtext" style="font-size:13px; margin-bottom:4px;">${i+1}.${j+1} ${text}</div>
+          <div class="dash-note" style="margin:0;">Tidak berkenaan — borang tiada (soalan sebelum dijawab "Tidak")</div>
+        </div>`;
+      }
+      return `<div class="sub-item" style="padding:10px 0; border-top:1px solid var(--line);">
+        <div class="qtext" style="font-size:13px; margin-bottom:8px;">${i+1}.${j+1} ${text}</div>
+        <div class="seg">
+          <button class="yes" data-i="${i}" data-j="${j}" data-v="yes">Ya</button>
+          <button class="no" data-i="${i}" data-j="${j}" data-v="no">Tidak</button>
+          ${allowNA ? `<button class="na" data-i="${i}" data-j="${j}" data-v="na">N/A</button>` : ''}
+        </div>
+        <div class="photo-row" id="photoRow-${i}-${j}"></div>
+      </div>`;
+    }).join('');
+
+    item.innerHTML = `
+      <div class="accordion-head" data-i="${i}" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+        <div class="qtext" style="margin-bottom:0;">${i+1}. ${c.title}</div>
+        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+          <span class="finding-badge ${answeredCount === c.items.length ? (compliantCount === c.items.length ? 'ok' : 'bad') : ''}" style="${answeredCount?'':'display:none;'}">${compliantCount}/${c.items.length}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${isOpen ? '▲' : '▼'}</span>
+        </div>
+      </div>
+      <div class="accordion-body" style="${isOpen ? '' : 'display:none;'} margin-top:6px;">
+        ${subRows}
+        <div class="remark-row">
+          <textarea data-i="${i}" class="remark-input" placeholder="Catatan (pilihan, untuk kategori ini)">${remarks[i] || ''}</textarea>
+        </div>
+        <div id="followupWrap-${i}"></div>
+      </div>`;
+    checklistEl.appendChild(item);
+    if (isOpen){
+      c.items.forEach((it, j) => {
+        if (subAnswers[i][j] === 'skip') return;
+        const seg = item.querySelectorAll('.sub-item')[j].querySelector('.seg');
+        seg.querySelectorAll('button').forEach(b => { if (b.dataset.v === subAnswers[i][j]) b.classList.add('active'); });
+        renderPhotoRow(i, j);
+      });
+      renderFollowup(i);
+    }
+  });
+  updateProgressNote();
+}
+
+checklistEl.addEventListener('click', e => {
+  const head = e.target.closest('.accordion-head');
+  if (head){
+    const i = +head.dataset.i;
+    openIndex = (openIndex === i) ? -1 : i;
+    renderChecklist();
+    return;
+  }
+  const btn = e.target.closest('.seg button');
+  if (btn){
+    const i = +btn.dataset.i, j = +btn.dataset.j, v = btn.dataset.v;
+    subAnswers[i][j] = v;
+    const hasDependency = CRITERIA[i].items.some(it => itemDependsOnPrev(it));
+    if (!categoryHasTidak(i)){ followUps[i] = { training: null, comp: [null,null,null] }; }
+    if (hasDependency){
+      // kategori ni ada sub-item bergantung (cth: soalan 2 perlu soalan 1) — render semula supaya skip/buka semula terpapar
+      renderChecklist();
+      updateScore();
+      return;
+    }
+    btn.closest('.seg').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFollowup(i);
+    // kemaskini badge kepala tanpa render semula seluruh accordion (kekalkan fokus)
+    const headEl = checklistEl.querySelector(`.accordion-head[data-i="${i}"]`);
+    const answeredCount = subAnswers[i].filter(a => a !== null).length;
+    const compliantCount = subAnswers[i].filter(a => a === 'yes').length;
+    const badge = headEl.querySelector('.finding-badge');
+    badge.textContent = `${compliantCount}/${CRITERIA[i].items.length}`;
+    badge.style.display = answeredCount ? '' : 'none';
+    badge.className = 'finding-badge ' + (answeredCount === CRITERIA[i].items.length ? (compliantCount === CRITERIA[i].items.length ? 'ok' : 'bad') : '');
+    updateProgressNote();
+    updateScore();
+    return;
+  }
+  const addBtn = e.target.closest('.photo-add-btn');
+  if (addBtn && addBtn.dataset.i !== undefined){
+    const i = +addBtn.dataset.i, j = +addBtn.dataset.j;
+    const selector = addBtn.dataset.mode === 'camera' ? '.photo-input-camera' : '.photo-input-gallery';
+    checklistEl.querySelector(`#photoRow-${i}-${j} ${selector}`).click();
+    return;
+  }
+  const removeBtn = e.target.closest('.photo-remove');
+  if (removeBtn){
+    const i = +removeBtn.dataset.i, j = +removeBtn.dataset.j, pi = +removeBtn.dataset.pi;
+    subPhotos[i][j].splice(pi, 1);
+    renderPhotoRow(i, j);
+  }
+  const fuBtn = e.target.closest('.followup-btn');
+  if (fuBtn){
+    const i = +fuBtn.dataset.i, kind = fuBtn.dataset.kind, v = fuBtn.dataset.v;
+    if (kind === 'training'){
+      followUps[i].training = v;
+    } else {
+      const idx = +fuBtn.dataset.idx;
+      followUps[i].comp[idx] = v;
+    }
+    renderFollowup(i);
+  }
+});
+
+checklistEl.addEventListener('change', async e => {
+  const input = e.target.closest('.photo-input-camera, .photo-input-gallery');
+  if (!input || !input.files || !input.files[0]) return;
+  const i = +input.dataset.i, j = +input.dataset.j;
+  try{
+    const dataUrl = await compressImageToDataUrl(input.files[0]);
+    subPhotos[i][j].push(dataUrl);
+    renderPhotoRow(i, j);
+  }catch(err){
+    showToast('Gagal muat naik gambar, cuba lagi.', true);
+  }
+  input.value = '';
+});
+
+checklistEl.addEventListener('input', e => {
+  const ta = e.target.closest('.remark-input');
+  if (!ta) return;
+  remarks[+ta.dataset.i] = ta.value;
+});
+
+function renderPhotoRow(i, j){
+  const row = $(`photoRow-${i}-${j}`);
+  if (!row) return;
+  const thumbs = subPhotos[i][j].map((src, pi) => `
+    <div class="photo-thumb-wrap">
+      <img class="photo-thumb" src="${src}">
+      <button type="button" class="photo-remove" data-i="${i}" data-j="${j}" data-pi="${pi}">&times;</button>
+    </div>`).join('');
+  row.innerHTML = `${thumbs}
+    <button type="button" class="photo-add-btn" data-i="${i}" data-j="${j}" data-mode="camera">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      Kamera
+    </button>
+    <button type="button" class="photo-add-btn" data-i="${i}" data-j="${j}" data-mode="gallery">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+      Galeri
+    </button>
+    <input type="file" accept="image/*" capture="environment" data-i="${i}" data-j="${j}" class="photo-input-camera" style="display:none;">
+    <input type="file" accept="image/*" data-i="${i}" data-j="${j}" class="photo-input-gallery" style="display:none;">`;
+}
+
+// Panel susulan bila mana-mana sub-item dalam kategori dijawab "Tidak": latihan + 3 soalan kefahaman (sorak satu-satu)
+function renderFollowup(i){
+  const wrap = $('followupWrap-' + i);
+  if (!wrap) return;
+  if (!categoryHasTidak(i)){ wrap.innerHTML = ''; return; }
+  const fu = followUps[i];
+  const c = CRITERIA[i];
+  let html = `<div class="finding-card" style="margin-top:12px; background:var(--paper);">
+    <div class="finding-meta" style="font-weight:800; color:var(--red); margin-bottom:8px;">Exploration — kenapa "Tidak"?</div>
+    <div class="finding-q" style="margin-bottom:6px;">${c.trainingQuestion || 'Pernah menghadiri kursus berkaitan kawalan infeksi berkaitan isu ini?'}</div>
+    <div class="seg">
+      <button type="button" class="followup-btn ${fu.training==='yes'?'yes active':'yes'}" data-i="${i}" data-kind="training" data-v="yes">Ya</button>
+      <button type="button" class="followup-btn ${fu.training==='no'?'no active':'no'}" data-i="${i}" data-kind="training" data-v="no">Tidak</button>
+    </div>`;
+  if (fu.training !== null){
+    for (let q = 0; q < c.comp.length; q++){
+      if (q > 0 && fu.comp[q-1] === null) break;
+      html += `<div class="finding-q" style="margin-top:12px;">${q+1}. ${c.comp[q]}</div>
+        <div class="seg">
+          <button type="button" class="followup-btn ${fu.comp[q]==='yes'?'yes active':'yes'}" data-i="${i}" data-kind="comp" data-idx="${q}" data-v="yes">Ya</button>
+          <button type="button" class="followup-btn ${fu.comp[q]==='no'?'no active':'no'}" data-i="${i}" data-kind="comp" data-idx="${q}" data-v="no">Tidak</button>
+        </div>`;
+    }
+  }
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+function isFollowupComplete(i){
+  if (!categoryHasTidak(i)) return true;
+  const fu = followUps[i];
+  return fu.training !== null && fu.comp.every(v => v !== null);
+}
+
+// ---- Tandatangan (signature pad) ----
+const sigCanvas = $('sigPad');
+const sigCtx = sigCanvas.getContext('2d');
+let sigDrawing = false, sigHasContent = false;
+function sigPos(e){
+  const rect = sigCanvas.getBoundingClientRect();
+  const scaleX = sigCanvas.width / rect.width, scaleY = sigCanvas.height / rect.height;
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return { x: cx * scaleX, y: cy * scaleY };
+}
+function sigStart(e){ sigDrawing = true; sigHasContent = true; const p = sigPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); e.preventDefault(); }
+function sigMove(e){ if (!sigDrawing) return; const p = sigPos(e); sigCtx.lineWidth = 2.4; sigCtx.lineCap = 'round'; sigCtx.strokeStyle = '#241B3A'; sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); e.preventDefault(); }
+function sigEnd(){ sigDrawing = false; }
+sigCanvas.addEventListener('mousedown', sigStart);
+sigCanvas.addEventListener('mousemove', sigMove);
+window.addEventListener('mouseup', sigEnd);
+sigCanvas.addEventListener('touchstart', sigStart, {passive:false});
+sigCanvas.addEventListener('touchmove', sigMove, {passive:false});
+sigCanvas.addEventListener('touchend', sigEnd);
+$('clearSigBtn').addEventListener('click', () => {
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  sigHasContent = false;
 });
 
 // Toggle2 (suka guna borang ini)
@@ -790,8 +1260,9 @@ document.querySelectorAll('.score-chip').forEach(chip => {
 });
 
 function updateScore(){
-  const applicable = answers.filter(a => a === 'yes' || a === 'no').length;
-  const compliant = answers.filter(a => a === 'yes').length;
+  const allAnswers = subAnswers.flat();
+  const applicable = allAnswers.filter(a => a === 'yes' || a === 'no').length;
+  const compliant = allAnswers.filter(a => a === 'yes').length;
   const pct = applicable ? Math.round((compliant/applicable)*100) : 0;
   const circumference = 132;
   const offset = circumference - (pct/100)*circumference;
@@ -799,7 +1270,7 @@ function updateScore(){
   ring.style.strokeDashoffset = applicable ? offset : circumference;
   ring.style.stroke = pct >= 90 ? '#0E6B62' : pct >= 70 ? '#C97A26' : '#B3402F';
   $('ringNum').textContent = applicable ? pct + '%' : '—';
-  $('scoreCount').textContent = `${compliant} / ${applicable} item dinilai`;
+  $('scoreCount').textContent = `${compliant} / ${applicable} item dinilai (${compliant} markah)`;
   return {compliant, applicable, pct};
 }
 
@@ -834,35 +1305,54 @@ async function saveLog(log){
   catch(e){ /* non-fatal */ }
 }
 
+function computeAuditStatus(){
+  const patientOk = $('patientName').value.trim() && $('patientRN').value.trim() && $('ward').value && $('bed').value.trim() && organism;
+  const allAnswered = subAnswers.every(arr => arr.every(a => a !== null));
+  const allFollowUpsDone = CRITERIA.every((c, i) => isFollowupComplete(i));
+  return (patientOk && allAnswered && allFollowUpsDone && sigHasContent) ? 'Lengkap' : 'Draft';
+}
+
 $('submitBtn').addEventListener('click', async () => {
   const ward = $('ward').value.trim();
-  const auditor = $('auditor').value.trim();
-  const date = $('date').value;
-  const finalMdroType = mdroType === 'Others' ? ($('mdroOtherInput').value.trim() || 'Others') : mdroType;
+  const bed = $('bed').value.trim();
+  const date = todayISO();
   const {compliant, applicable, pct} = updateScore();
+  const status = computeAuditStatus();
 
-  if (!ward || !auditor || !finalMdroType){
-    showToast('Sila lengkapkan ward, auditor dan jenis MDRO.', true);
+  if (!currentAuditor){
+    showToast('Sila log masuk dahulu.', true);
     return;
   }
-  if (answers.some(a => a === null)){
-    showToast('Sila lengkapkan semua 7 item audit.', true);
+  if (!ward){
+    showToast('Sila pilih ward.', true);
     return;
   }
+
+  const finalOrganism = organism === 'Lain-lain' ? ($('organismOtherInput').value.trim() || 'Lain-lain') : organism;
 
   const payload = {
-    ward, date, auditor, mdroType: finalMdroType,
-    q1: answers[0], q2: answers[1], q3: answers[2], q4: answers[3],
-    q5: answers[4], q6: answers[5], q7: answers[6],
+    ward, bed, date, auditor: currentAuditor,
+    patientName: $('patientName').value.trim(),
+    patientIC: $('patientIC').value.trim(),
+    patientRN: $('patientRN').value.trim(),
+    admissionDate: $('admissionDate').value,
+    organism: finalOrganism,
+    status,
+    signature: sigHasContent ? sigCanvas.toDataURL('image/png') : '',
     totalCompliant: compliant, totalApplicable: applicable, compliancePercent: pct,
     likeApp: likeAppFlag,
     feedbackScore: feedbackScore,
     improvement: $('improvement').value.trim(),
     problems: $('problems').value.trim(),
-    q1Photo: photos[0] || '', q2Photo: photos[1] || '', q3Photo: photos[2] || '',
-    q4Photo: photos[3] || '', q5Photo: photos[4] || '', q6Photo: photos[5] || '', q7Photo: photos[6] || '',
-    q1Remark: remarks[0] || '', q2Remark: remarks[1] || '', q3Remark: remarks[2] || '',
-    q4Remark: remarks[3] || '', q5Remark: remarks[4] || '', q6Remark: remarks[5] || '', q7Remark: remarks[6] || ''
+    categories: CRITERIA.map((c, i) => ({
+      title: c.title,
+      remark: remarks[i],
+      training: followUps[i].training,
+      comp: followUps[i].comp,
+      items: c.items.map((it, j) => ({
+        text: itemText(it), answer: subAnswers[i][j], photos: subPhotos[i][j]
+      }))
+    }))
   };
 
   $('submitBtn').disabled = true;
@@ -875,14 +1365,14 @@ $('submitBtn').addEventListener('click', async () => {
         method: 'POST',
         mode: 'no-cors',
         headers: {'Content-Type': 'text/plain'},
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ formType: 'mdro_audit', ...payload })
       });
       synced = true;
     }catch(e){ synced = false; }
   }
 
   // Simpan salinan ringkas pada peranti (tanpa gambar, supaya storan peranti tak cepat penuh)
-  const { q1Photo, q2Photo, q3Photo, q4Photo, q5Photo, q6Photo, q7Photo, ...payloadLite } = payload;
+  const payloadLite = {...payload, signature: '', categories: payload.categories.map(c => ({...c, items: c.items.map(it => ({...it, photos: []}))}))};
   const log = await getLog();
   log.unshift({...payloadLite, synced, savedAt: new Date().toISOString()});
   await saveLog(log);
@@ -891,7 +1381,7 @@ $('submitBtn').addEventListener('click', async () => {
   $('submitBtn').textContent = 'Hantar audit';
 
   if (synced){
-    showToast('Audit dihantar ke Google Sheet ✓');
+    showToast(status === 'Lengkap' ? 'Audit LENGKAP dihantar ✓' : 'Disimpan sebagai DRAFT — lengkapkan kemudian.');
   } else {
     showToast('Gagal hantar ke Sheet — disimpan pada peranti.', true);
   }
@@ -900,18 +1390,19 @@ $('submitBtn').addEventListener('click', async () => {
 });
 
 function resetForm(){
-  answers = new Array(CRITERIA.length).fill(null);
-  photos = new Array(CRITERIA.length).fill(null);
+  subAnswers = CRITERIA.map(c => new Array(c.items.length).fill(null));
+  subPhotos = CRITERIA.map(c => c.items.map(() => []));
   remarks = new Array(CRITERIA.length).fill('');
-  document.querySelectorAll('.audit-item .seg button').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.remark-input').forEach(ta => ta.value = '');
-  for (let i = 0; i < CRITERIA.length; i++) renderPhotoRow(i);
-  $('ward').value = ''; $('auditor').value = '';
+  followUps = CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
+  openIndex = -1;
+  renderChecklist();
   $('improvement').value = ''; $('problems').value = '';
-  $('auditorBadge').style.display = 'none';
-  $('date').value = new Date().toISOString().slice(0,10);
-  mdroType = ''; $('mdroType').value = '';
-  $('mdroOtherInput').classList.remove('show'); $('mdroOtherInput').value = '';
+  $('ward').value = ''; $('bed').value = '';
+  $('patientName').value = ''; $('patientIC').value = ''; $('patientRN').value = ''; $('admissionDate').value = '';
+  organism = ''; $('organism').value = ''; $('organismOtherInput').style.display = 'none'; $('organismOtherInput').value = '';
+  $('ocrStatus').textContent = 'Imbas label pesakit untuk auto-isi Nama/IC/RN/Tarikh Admission (semak semula ketepatan).';
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  sigHasContent = false;
   likeAppFlag = 'Suka'; feedbackScore = '';
   document.querySelectorAll('.toggle2').forEach(g => {
     g.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -969,16 +1460,19 @@ function renderDashboard(records){
 }
 
 function computeQuestionStats(records, wardFilter){
-  const qKeys = ['q1','q2','q3','q4','q5','q6','q7'];
   const filtered = wardFilter === 'ALL' ? records : records.filter(r => r.ward === wardFilter);
-  return qKeys.map((k, i) => {
+  return CRITERIA.map((c, i) => {
     let yes = 0, applicable = 0;
     filtered.forEach(r => {
-      const v = (r[k] || '').toString().toLowerCase();
-      if (v === 'yes' || v === 'no'){ applicable++; if (v === 'yes') yes++; }
+      const cat = r.categories && r.categories[i];
+      const items = cat ? (cat.items || []) : [];
+      items.forEach(it => {
+        const v = (it.answer || '').toString().toLowerCase();
+        if (v === 'yes' || v === 'no'){ applicable++; if (v === 'yes') yes++; }
+      });
     });
     const pct = applicable ? Math.round((yes / applicable) * 100) : null;
-    return {label: CRITERIA[i], pct, applicable};
+    return {label: c.title, pct, applicable};
   });
 }
 
@@ -1116,6 +1610,15 @@ function applyDashboardFilters(){
   const records = filteredRecords();
   renderDashboard(records);
   renderQuestionBars(computeQuestionStats(records, $('dashWardFilter').value));
+  renderDraftPanel(records);
+}
+
+function renderDraftPanel(records){
+  const drafts = records.filter(r => r.status === 'Draft');
+  $('draftCount').textContent = drafts.length;
+  $('draftList').innerHTML = drafts.slice(0, 8).map(r =>
+    `<div class="finding-row"><div class="finding-q">${escapeHtml(r.ward||'')} — ${escapeHtml(r.patientName||'Tiada nama')} (${escapeHtml(r.date||'')})</div></div>`
+  ).join('') || '<div class="empty-hist">Tiada audit draft.</div>';
 }
 
 async function loadDashboard(){
@@ -1132,10 +1635,10 @@ async function loadDashboard(){
   if (!liveOk){
     const log = await getLog();
     records = log.map(a => ({
-      ward: a.ward, date: a.date, auditor: a.auditor, mdroType: a.mdroType, compliancePercent: a.compliancePercent,
-      q1:a.q1, q2:a.q2, q3:a.q3, q4:a.q4, q5:a.q5, q6:a.q6, q7:a.q7,
-      q1Remark:a.q1Remark, q2Remark:a.q2Remark, q3Remark:a.q3Remark, q4Remark:a.q4Remark,
-      q5Remark:a.q5Remark, q6Remark:a.q6Remark, q7Remark:a.q7Remark
+      ward: a.ward, bed: a.bed, date: a.date, auditor: a.auditor, status: a.status,
+      patientName: a.patientName, patientIC: a.patientIC, patientRN: a.patientRN, organism: a.organism,
+      compliancePercent: a.compliancePercent,
+      categories: (a.categories || []).map(c => ({...c, items: (c.items||[]).map(it => ({...it, photos: []}))}))
       // gambar tak disimpan pada peranti (offline) — hanya tersedia bila disambung ke Google Sheet
     }));
   }
@@ -1220,26 +1723,32 @@ function reportFilteredRecords(){
 }
 
 function buildFindingCard(r){
-  const rows = CRITERIA.map((text, i) => {
-    const idx = i + 1;
-    const v = (r['q' + idx] || '').toString().toLowerCase();
-    const badgeClass = v === 'yes' ? 'ok' : v === 'no' ? 'bad' : 'na';
-    const badgeText = v === 'yes' ? 'Ya' : v === 'no' ? 'Tidak' : v === 'na' ? 'N/A' : '—';
-    const remark = r['q' + idx + 'Remark'];
-    const photo = r['q' + idx + 'Photo'];
-    return `<div class="finding-row">
-      <div class="finding-q"><b>Q${idx}.</b> ${escapeHtml(text)} <span class="finding-badge ${badgeClass}">${badgeText}</span></div>
-      ${remark ? `<div class="finding-remark">${escapeHtml(remark)}</div>` : ''}
-      ${photo ? `<a href="${photo}" target="_blank" rel="noopener"><img class="finding-photo" src="${photo}" loading="lazy"></a>` : ''}
+  const rows = (r.categories || []).map((c, i) => {
+    const items = (c.items || []).map((it, j) => {
+      const v = (it.answer || '').toString().toLowerCase();
+      const badgeClass = v === 'yes' ? 'ok' : v === 'no' ? 'bad' : 'na';
+      const badgeText = v === 'yes' ? 'Ya' : v === 'no' ? 'Tidak' : v === 'na' ? 'N/A' : '—';
+      const photoImgs = (it.photos || []).map(p => `<a href="${p}" target="_blank" rel="noopener"><img class="finding-photo" src="${p}" loading="lazy"></a>`).join('');
+      return `<div class="finding-row" style="padding-left:10px;">
+        <div class="finding-q">${i+1}.${j+1} ${escapeHtml(it.text || '')} <span class="finding-badge ${badgeClass}">${badgeText}</span></div>
+        ${photoImgs}
+      </div>`;
+    }).join('');
+    return `<div style="margin-top:8px;">
+      <div class="finding-q" style="font-weight:800;">${i+1}. ${escapeHtml(c.title || (CRITERIA[i] ? CRITERIA[i].title : ''))}</div>
+      ${c.remark ? `<div class="finding-remark">${escapeHtml(c.remark)}</div>` : ''}
+      ${items}
     </div>`;
   }).join('');
+  const statusBadgeClass = r.status === 'Lengkap' ? 'ok' : 'na';
   return `<div class="finding-card">
     <div class="finding-head">
       <span class="finding-ward">${escapeHtml(r.ward)}</span>
       <span class="finding-date">${escapeHtml(r.date || '')}</span>
+      <span class="finding-badge ${statusBadgeClass}">${escapeHtml(r.status || '')}</span>
       <span class="finding-pct">${r.compliancePercent !== undefined && r.compliancePercent !== '' ? r.compliancePercent + '%' : ''}</span>
     </div>
-    <div class="finding-meta">${escapeHtml(r.auditor || '')}${r.mdroType ? ' · ' + escapeHtml(r.mdroType) : ''}</div>
+    <div class="finding-meta">${escapeHtml(r.patientName || '')}${r.organism ? ' · ' + escapeHtml(r.organism) : ''} — ${escapeHtml(r.auditor || '')}</div>
     ${rows}
   </div>`;
 }
@@ -1292,7 +1801,7 @@ $('printReportBtn').addEventListener('click', () => {
 function buildReportWordHtml(records, stats, photoMap){
   photoMap = photoMap || {};
   const wardVal = $('reportWardFilter').value;
-  const wardLabel = wardVal === 'ALL' ? 'Semua ward' : wardVal;
+  const wardLabel = wardVal === 'ALL' ? 'Semua Ward' : wardVal;
   let periodLabel = 'Semua tempoh';
   if (reportPeriodMode === 'month' && reportPeriodValue){
     const [y, mo] = reportPeriodValue.split('-');
@@ -1302,48 +1811,110 @@ function buildReportWordHtml(records, stats, photoMap){
   }
   let sum = 0, count = 0;
   records.forEach(r => { const p = Number(r.compliancePercent); if (!isNaN(p)){ sum += p; count++; } });
-  const overallPct = count ? Math.round(sum / count) + '%' : '—';
+  const overallPct = count ? Math.round(sum / count) : null;
   const genDate = new Date().toLocaleDateString('ms-MY');
-  const F = "font-family:Calibri,Arial,sans-serif;";
 
-  let html = `<h1 style="${F}color:#402A87;">Laporan Audit MDRO</h1>
-  <p style="${F}"><b>Ward:</b> ${escapeHtml(wardLabel)} &nbsp;&nbsp; <b>Tempoh:</b> ${escapeHtml(periodLabel)} &nbsp;&nbsp; <b>Tarikh jana:</b> ${genDate}</p>
-  <p style="${F}"><b>Purata Pematuhan:</b> ${overallPct} &nbsp;&nbsp; <b>Jumlah Audit:</b> ${records.length}</p>
-  <h2 style="${F}color:#402A87;">Pematuhan Mengikut Soalan</h2>
-  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;${F}width:100%;">
-    <tr style="background:#EFE7FC;"><th>Soalan</th><th>% Pematuhan</th><th>Bil. Dinilai</th></tr>
-    ${stats.map((s,i) => `<tr><td>Q${i+1}. ${escapeHtml(s.label)}</td><td align="center">${s.pct === null ? '—' : s.pct + '%'}</td><td align="center">${s.applicable}</td></tr>`).join('')}
+  const dates = records.map(r => r.date).filter(Boolean).sort();
+  const dateRangeLabel = dates.length
+    ? (dates[0] === dates[dates.length-1] ? dates[0] : `${dates[0]} hingga ${dates[dates.length-1]}`)
+    : '—';
+  const auditors = Array.from(new Set(records.map(r => r.auditor).filter(Boolean)));
+  const auditorLabel = auditors.length ? auditors.join(', ') : '—';
+
+  const F = "font-family:Calibri,Arial,sans-serif; font-size:11pt;";
+  const TD = "border:1px solid #000; padding:6px 8px; vertical-align:top;";
+  const TH = TD + "background:#EFE7FC; font-weight:bold;";
+
+  let html = `<div style="${F}text-align:center;">
+    <p style="font-weight:bold; font-size:13pt;">LAPORAN AUDIT PEMATUHAN PENGURUSAN<br>MULTIDRUG-RESISTANT ORGANISMS (MDRO)<br>DI HOSPITAL TENGKU PERMAISURI NORASHIKIN KAJANG</p>
+  </div>
+  <table style="border-collapse:collapse; width:100%; ${F}margin-top:10px;">
+    <tr><td style="${TH}width:26%;">Tarikh Audit:</td><td style="${TD}width:24%;">${escapeHtml(dateRangeLabel)}</td><td style="${TH}width:26%;">Tempoh Laporan:</td><td style="${TD}width:24%;">${escapeHtml(periodLabel)}</td></tr>
+    <tr><td style="${TH}">Lokasi (Ward):</td><td style="${TD}" colspan="3">${escapeHtml(wardLabel)}</td></tr>
+    <tr><td style="${TH}">Audit dijalankan oleh:</td><td style="${TD}" colspan="3">${escapeHtml(auditorLabel)}</td></tr>
+    <tr><td style="${TH}">Wakil Jabatan:</td><td style="${TD}" colspan="3">&nbsp;</td></tr>
   </table>
-  <h2 style="${F}color:#402A87;">Butiran Finding</h2>`;
 
-  if (!records.length){
-    html += `<p style="${F}">Tiada audit untuk tempoh/ward dipilih.</p>`;
-  }
+  <p style="${F}font-weight:bold; margin-top:16px;">1. Tujuan</p>
+  <p style="${F}">Laporan ini disediakan bagi melaporkan hasil audit pematuhan pengurusan pesakit <i>Multidrug-Resistant Organisms</i> (MDRO) di ${escapeHtml(wardLabel)} bagi tempoh ${escapeHtml(periodLabel)}, meliputi aspek checklist MDRO, signage, kesediaan PPE, dan pengurusan sisa klinikal.</p>
 
-  records.forEach(r => {
-    html += `<div style="margin-top:14px; padding-top:8px; border-top:1px solid #ccc; ${F}">
-      <p><b>${escapeHtml(r.ward)}</b> — ${escapeHtml(r.date || '')} — ${escapeHtml(r.auditor || '')}${r.mdroType ? ' · ' + escapeHtml(r.mdroType) : ''} — ${r.compliancePercent !== undefined && r.compliancePercent !== '' ? r.compliancePercent + '%' : ''}</p>`;
-    CRITERIA.forEach((text, i) => {
-      const idx = i + 1;
-      const v = (r['q' + idx] || '').toString().toLowerCase();
-      const badgeText = v === 'yes' ? 'Ya' : v === 'no' ? 'Tidak' : v === 'na' ? 'N/A' : '—';
-      const remark = r['q' + idx + 'Remark'];
-      const photoUrl = r['q' + idx + 'Photo'];
-      html += `<p style="margin:4px 0;"><b>Q${idx}.</b> ${escapeHtml(text)} — <b>${badgeText}</b>${remark ? `<br><i>${escapeHtml(remark)}</i>` : ''}</p>`;
-      if (photoUrl){
-        const fileId = extractDriveFileId(photoUrl);
-        const embedded = fileId && photoMap[fileId] ? photoMap[fileId] : '';
-        if (embedded){
-          html += `<p><img src="${embedded}" style="width:260px;max-width:100%;border:1px solid #ccc;"></p>`;
-        } else {
-          html += `<p><i>(Gambar tidak dapat dimuatkan — sila semak sambungan internet semasa jana laporan)</i></p>`;
-        }
+  <p style="${F}font-weight:bold; margin-top:16px;">2. Hasil Pemerhatian</p>
+  <p style="${F}">Sepanjang tempoh audit, sebanyak <b>${records.length}</b> audit telah direkodkan di ${escapeHtml(wardLabel)}, dengan purata keseluruhan pematuhan sebanyak <b>${overallPct === null ? '—' : overallPct + '%'}</b>.</p>
+
+  <p style="${F}font-weight:bold; margin-top:16px;">3. Penilaian Aspek Kawalan Infeksi</p>
+  <p style="${F}">Penilaian dijalankan berdasarkan 7 kriteria audit standard unit Kawalan Infeksi merangkumi checklist MDRO, signage, PPE, dan pengurusan sisa klinikal. Dapatan terperinci bagi setiap kriteria adalah seperti dalam jadual di bawah.</p>
+
+  <p style="${F}font-weight:bold; margin-top:16px; text-align:center;">PEMANTAUAN UNIT KAWALAN INFEKSI — PEMATUHAN MDRO</p>
+  <table style="border-collapse:collapse; width:100%; ${F}">
+    <tr>
+      <td style="${TH}width:4%;">No</td>
+      <td style="${TH}width:22%;">Isu</td>
+      <td style="${TH}width:24%;">Hasil Pemantauan</td>
+      <td style="${TH}width:22%;">Rujukan (Gambar)</td>
+      <td style="${TH}width:28%;">Cadangan</td>
+    </tr>`;
+
+  CRITERIA.forEach((c, i) => {
+    const idx = i + 1;
+    const s = stats[i];
+    const pctText = s.pct === null ? 'Tiada data' : `${s.pct}% patuh (${s.applicable} item dinilai)`;
+    const remarkTexts = records
+      .map(r => ((r.categories && r.categories[i] && r.categories[i].remark) || '').trim())
+      .filter(Boolean);
+    const uniqueRemarks = Array.from(new Set(remarkTexts));
+    const remarksHtml = uniqueRemarks.length
+      ? '<br>' + uniqueRemarks.map(r => `• ${escapeHtml(r)}`).join('<br>')
+      : '';
+
+    const photoUrls = records.flatMap(r => {
+      const cat = r.categories && r.categories[i];
+      const items = cat ? (cat.items || []) : [];
+      return items.flatMap(it => it.photos || []);
+    }).slice(0, 3);
+    let photosHtml = '';
+    photoUrls.forEach(url => {
+      const fileId = extractDriveFileId(url);
+      const embedded = fileId && photoMap[fileId] ? photoMap[fileId] : '';
+      if (embedded){
+        photosHtml += `<img src="${embedded}" style="width:140px;max-width:100%;border:1px solid #ccc;margin:2px;">`;
       }
     });
-    html += `</div>`;
+    if (!photosHtml) photosHtml = '—';
+
+    html += `<tr>
+      <td style="${TD}text-align:center;">${idx}</td>
+      <td style="${TD}">${escapeHtml(c.title)}</td>
+      <td style="${TD}">${pctText}${remarksHtml}</td>
+      <td style="${TD}">${photosHtml}</td>
+      <td style="${TD}">(Untuk diisi oleh Pegawai Kawalan Jangkitan)</td>
+    </tr>`;
   });
 
+  html += `</table>
+
+  <p style="${F}font-weight:bold; margin-top:16px;">4. Cadangan Lain</p>
+  <p style="${F}">(Untuk diisi oleh Pegawai Kawalan Jangkitan)</p>
+
+  <p style="${F}font-weight:bold; margin-top:16px;">5. Kesimpulan</p>
+  <p style="${F}">${buildKesimpulanText(overallPct, wardLabel)}</p>
+
+  <p style="${F}margin-top:24px;">Disediakan oleh: ____________________________</p>
+  <p style="${F}">Tarikh Laporan Dijana: ${genDate}</p>`;
+
   return html;
+}
+
+function buildKesimpulanText(overallPct, wardLabel){
+  if (overallPct === null){
+    return `Tiada data pematuhan yang mencukupi bagi ${escapeHtml(wardLabel)} pada tempoh ini untuk membuat penilaian.`;
+  }
+  if (overallPct >= 90){
+    return `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>BAIK</b> (${overallPct}%). Amalan sedia ada perlu dikekalkan dan dipantau secara berterusan.`;
+  }
+  if (overallPct >= 70){
+    return `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>SEDERHANA</b> (${overallPct}%). Penambahbaikan diperlukan pada aspek yang dikenal pasti tidak patuh dalam jadual di atas.`;
+  }
+  return `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>RENDAH</b> (${overallPct}%). Tindakan penambahbaikan segera diperlukan bagi mengurangkan risiko penularan jangkitan silang.`;
 }
 
 function extractDriveFileId(url){
@@ -1390,9 +1961,8 @@ $('downloadWordBtn').addEventListener('click', async () => {
   const records = reportFilteredRecords();
   const stats = computeQuestionStats(records, 'ALL');
 
-  const qKeys = ['q1Photo','q2Photo','q3Photo','q4Photo','q5Photo','q6Photo','q7Photo'];
   const fileIds = Array.from(new Set(
-    records.flatMap(r => qKeys.map(k => extractDriveFileId(r[k])).filter(Boolean))
+    records.flatMap(r => (r.categories || []).flatMap(c => (c.items || []).flatMap(it => (it.photos || []).map(extractDriveFileId).filter(Boolean))))
   ));
   const photoMap = await fetchPhotosBase64(fileIds);
 
@@ -1404,9 +1974,76 @@ $('downloadWordBtn').addEventListener('click', async () => {
   btn.textContent = originalText;
 });
 
+// ---- Tab Ask Cleaner ----
+let cleanerAnswer = null;
+let cleanerPhotos = [];
+
+$('cleanerYesBtn').addEventListener('click', () => {
+  cleanerAnswer = 'yes';
+  $('cleanerYesBtn').classList.add('active'); $('cleanerNoBtn').classList.remove('active');
+});
+$('cleanerNoBtn').addEventListener('click', () => {
+  cleanerAnswer = 'no';
+  $('cleanerNoBtn').classList.add('active'); $('cleanerYesBtn').classList.remove('active');
+});
+$('cleanerCameraBtn').addEventListener('click', () => $('cleanerInputCamera').click());
+$('cleanerGalleryBtn').addEventListener('click', () => $('cleanerInputGallery').click());
+async function handleCleanerPhoto(file){
+  try{
+    const dataUrl = await compressImageToDataUrl(file);
+    cleanerPhotos.push(dataUrl);
+    renderCleanerThumbs();
+  }catch(e){ showToast('Gagal muat naik gambar.', true); }
+}
+$('cleanerInputCamera').addEventListener('change', e => { if (e.target.files[0]) handleCleanerPhoto(e.target.files[0]); e.target.value=''; });
+$('cleanerInputGallery').addEventListener('change', e => { if (e.target.files[0]) handleCleanerPhoto(e.target.files[0]); e.target.value=''; });
+function renderCleanerThumbs(){
+  $('cleanerPhotoThumbs').innerHTML = cleanerPhotos.map((src, pi) => `
+    <div class="photo-thumb-wrap">
+      <img class="photo-thumb" src="${src}">
+      <button type="button" class="photo-remove" data-pi="${pi}">&times;</button>
+    </div>`).join('');
+}
+$('cleanerPhotoThumbs').addEventListener('click', e => {
+  const btn = e.target.closest('.photo-remove');
+  if (!btn) return;
+  cleanerPhotos.splice(+btn.dataset.pi, 1);
+  renderCleanerThumbs();
+});
+$('cleanerSubmitBtn').addEventListener('click', async () => {
+  const ward = $('cleanerWard').value;
+  if (!ward){ showToast('Sila pilih ward.', true); return; }
+  if (!cleanerAnswer){ showToast('Sila jawab soalan.', true); return; }
+  if (!currentAuditor){ showToast('Sila log masuk dahulu.', true); return; }
+  const payload = {
+    formType: 'cleaner_check',
+    ward, date: todayISO(), auditor: currentAuditor,
+    cleanerName: $('cleanerName').value.trim(),
+    answer: cleanerAnswer,
+    remark: $('cleanerRemark').value.trim(),
+    photos: cleanerPhotos
+  };
+  $('cleanerSubmitBtn').disabled = true;
+  $('cleanerSubmitBtn').textContent = 'Menghantar...';
+  try{
+    await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
+    showToast('Maklum balas cleaner dihantar ✓');
+  }catch(e){
+    showToast('Gagal hantar — semak sambungan internet.', true);
+  }
+  $('cleanerSubmitBtn').disabled = false;
+  $('cleanerSubmitBtn').textContent = 'Hantar';
+  $('cleanerWard').value = ''; $('cleanerName').value = ''; $('cleanerRemark').value = '';
+  cleanerAnswer = null; cleanerPhotos = [];
+  $('cleanerYesBtn').classList.remove('active'); $('cleanerNoBtn').classList.remove('active');
+  renderCleanerThumbs();
+});
+
 loadSettings();
 updateScore();
 document.querySelector('.scorebar').style.display = 'none';
+renderChecklist();
+initLogin();
 
 (async function initSplash(){
   const minShow = new Promise(resolve => setTimeout(resolve, 900));
