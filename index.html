@@ -583,28 +583,9 @@ input,textarea{font-family:inherit;}
     </div>
   </div>
   <div class="card">
-    <h2><span class="num">2</span>Soalan</h2>
-    <div class="qtext" style="margin-bottom:10px;">Cleaner telah dimaklumkan berkenaan kes MDRO, peralatan lengkap, pembersihan harian dilakukan mengikut bancuhan disinfectant yang betul, dan penggunaan PPE yang betul semasa pembersihan?</div>
-    <div class="seg">
-      <button class="yes" id="cleanerYesBtn" data-v="yes">Ya</button>
-      <button class="no" id="cleanerNoBtn" data-v="no">Tidak</button>
-    </div>
-    <div class="photo-row" id="cleanerPhotoRow" style="margin-top:12px;">
-      <button type="button" class="photo-add-btn" data-mode="camera" id="cleanerCameraBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Kamera
-      </button>
-      <button type="button" class="photo-add-btn" data-mode="gallery" id="cleanerGalleryBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
-        Galeri
-      </button>
-      <input type="file" accept="image/*" capture="environment" id="cleanerInputCamera" style="display:none;">
-      <input type="file" accept="image/*" id="cleanerInputGallery" style="display:none;">
-    </div>
-    <div id="cleanerPhotoThumbs" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
-    <div class="remark-row">
-      <textarea id="cleanerRemark" placeholder="Catatan (pilihan, terutama jika jawapan Tidak)"></textarea>
-    </div>
+    <h2><span class="num">2</span>Soalan Pencucian Persekitaran (Environmental Cleaning)</h2>
+    <div class="dash-note" style="margin-bottom:10px;">Rujukan: CDC — Best Practices for Environmental Cleaning in Healthcare Facilities; NJDOH — Targeted MDRO Prevention Strategies Checklist.</div>
+    <div id="cleanerChecklist"></div>
     <button class="submit-btn" id="cleanerSubmitBtn" style="margin-top:14px;">Hantar</button>
   </div>
   </div>
@@ -1184,14 +1165,17 @@ function renderFollowup(i){
   if (!categoryHasTidak(i)){ wrap.innerHTML = ''; return; }
   const fu = followUps[i];
   const c = CRITERIA[i];
+  const needsTraining = (i === 0); // hanya kategori 1 tanya soalan "pernah training"; kategori 2-10 terus ke soalan kefahaman
   let html = `<div class="finding-card" style="margin-top:12px; background:var(--paper);">
-    <div class="finding-meta" style="font-weight:800; color:var(--red); margin-bottom:8px;">Exploration — kenapa "Tidak"?</div>
-    <div class="finding-q" style="margin-bottom:6px;">${c.trainingQuestion || 'Pernah menghadiri kursus berkaitan kawalan infeksi berkaitan isu ini?'}</div>
+    <div class="finding-meta" style="font-weight:800; color:var(--red); margin-bottom:8px;">Exploration — kenapa "Tidak"?</div>`;
+  if (needsTraining){
+    html += `<div class="finding-q" style="margin-bottom:6px;">${c.trainingQuestion || 'Pernah menghadiri kursus berkaitan kawalan infeksi berkaitan isu ini?'}</div>
     <div class="seg">
       <button type="button" class="followup-btn ${fu.training==='yes'?'yes active':'yes'}" data-i="${i}" data-kind="training" data-v="yes">Ya</button>
       <button type="button" class="followup-btn ${fu.training==='no'?'no active':'no'}" data-i="${i}" data-kind="training" data-v="no">Tidak</button>
     </div>`;
-  if (fu.training !== null){
+  }
+  if (needsTraining ? fu.training !== null : true){
     for (let q = 0; q < c.comp.length; q++){
       if (q > 0 && fu.comp[q-1] === null) break;
       html += `<div class="finding-q" style="margin-top:12px;">${q+1}. ${c.comp[q]}</div>
@@ -1208,7 +1192,9 @@ function renderFollowup(i){
 function isFollowupComplete(i){
   if (!categoryHasTidak(i)) return true;
   const fu = followUps[i];
-  return fu.training !== null && fu.comp.every(v => v !== null);
+  const needsTraining = (i === 0);
+  if (needsTraining && fu.training === null) return false;
+  return fu.comp.every(v => v !== null);
 }
 
 // ---- Tandatangan (signature pad) ----
@@ -1975,53 +1961,124 @@ $('downloadWordBtn').addEventListener('click', async () => {
 });
 
 // ---- Tab Ask Cleaner ----
-let cleanerAnswer = null;
-let cleanerPhotos = [];
+// Rujukan: CDC "Best Practices for Environmental Cleaning in Healthcare Facilities" (2019/2024) —
+// termasuk susunan bersih-ke-kotor, tempoh sentuhan disinfectant, dan permukaan high-touch;
+// NJDOH "Targeted MDRO Prevention Strategies" Facility Checklist — item EVS/bancuhan disinfectant, PPE, pengenalpastian kes.
+const CLEANER_ITEMS = [
+  { text: "Cleaner dapat mengenal pasti dengan betul bilik/kawasan pesakit MDRO yang memerlukan pembersihan & langkah tambahan",
+    ref: "NJDOH MDRO Checklist" },
+  { text: "Cleaner menggunakan PPE yang betul (glove, apron/gown) semasa membersihkan kawasan pesakit MDRO",
+    ref: "NJDOH MDRO Checklist" },
+  { text: "Bancuhan/kepekatan disinfectant yang betul digunakan mengikut arahan pengeluar",
+    ref: "NJDOH MDRO Checklist" },
+  { text: "Cleaner tahu tempoh sentuhan (contact/dwell time) disinfectant sebelum permukaan dilap/dikeringkan",
+    ref: "CDC Environmental Cleaning" },
+  { text: "Permukaan 'high-touch' (bed rails, tray table, IV pole, tombol panggilan, tandas) dibersihkan",
+    ref: "CDC / MDH ICAR High-Touch Checklist" },
+  { text: "Pembersihan dilakukan dari kawasan bersih ke kotor (top-to-bottom, clean-to-dirty) untuk elak pencemaran silang",
+    ref: "CDC Environmental Cleaning" },
+  { text: "Pembersihan terminal (lengkap) dilakukan selepas pesakit discaj/pindah wad",
+    ref: "MOH Facility Infection Control Checklist" }
+];
+let cleanerAnswers = new Array(CLEANER_ITEMS.length).fill(null);
+let cleanerPhotos = CLEANER_ITEMS.map(() => []);
+let cleanerRemarks = new Array(CLEANER_ITEMS.length).fill('');
 
-$('cleanerYesBtn').addEventListener('click', () => {
-  cleanerAnswer = 'yes';
-  $('cleanerYesBtn').classList.add('active'); $('cleanerNoBtn').classList.remove('active');
-});
-$('cleanerNoBtn').addEventListener('click', () => {
-  cleanerAnswer = 'no';
-  $('cleanerNoBtn').classList.add('active'); $('cleanerYesBtn').classList.remove('active');
-});
-$('cleanerCameraBtn').addEventListener('click', () => $('cleanerInputCamera').click());
-$('cleanerGalleryBtn').addEventListener('click', () => $('cleanerInputGallery').click());
-async function handleCleanerPhoto(file){
-  try{
-    const dataUrl = await compressImageToDataUrl(file);
-    cleanerPhotos.push(dataUrl);
-    renderCleanerThumbs();
-  }catch(e){ showToast('Gagal muat naik gambar.', true); }
+function renderCleanerChecklist(){
+  $('cleanerChecklist').innerHTML = CLEANER_ITEMS.map((item, k) => `
+    <div class="sub-item" style="padding:12px 0; border-top:1px solid var(--line);">
+      <div class="qtext" style="font-size:13.5px; margin-bottom:4px;">${k+1}. ${item.text}</div>
+      <div class="dash-note" style="margin:0 0 8px; font-size:11px;">Rujukan: ${item.ref}</div>
+      <div class="seg">
+        <button class="yes" data-k="${k}" data-v="yes">Ya</button>
+        <button class="no" data-k="${k}" data-v="no">Tidak</button>
+      </div>
+      <div class="photo-row" id="cleanerPhotoRow-${k}"></div>
+      <div class="remark-row">
+        <textarea data-k="${k}" class="cleaner-remark-input" placeholder="Catatan (pilihan, terutama jika Tidak)">${cleanerRemarks[k] || ''}</textarea>
+      </div>
+    </div>`).join('');
+  CLEANER_ITEMS.forEach((item, k) => renderCleanerPhotoRow(k));
 }
-$('cleanerInputCamera').addEventListener('change', e => { if (e.target.files[0]) handleCleanerPhoto(e.target.files[0]); e.target.value=''; });
-$('cleanerInputGallery').addEventListener('change', e => { if (e.target.files[0]) handleCleanerPhoto(e.target.files[0]); e.target.value=''; });
-function renderCleanerThumbs(){
-  $('cleanerPhotoThumbs').innerHTML = cleanerPhotos.map((src, pi) => `
+renderCleanerChecklist();
+
+function renderCleanerPhotoRow(k){
+  const row = $('cleanerPhotoRow-' + k);
+  if (!row) return;
+  const thumbs = cleanerPhotos[k].map((src, pi) => `
     <div class="photo-thumb-wrap">
       <img class="photo-thumb" src="${src}">
-      <button type="button" class="photo-remove" data-pi="${pi}">&times;</button>
+      <button type="button" class="photo-remove" data-k="${k}" data-pi="${pi}">&times;</button>
     </div>`).join('');
+  row.innerHTML = `${thumbs}
+    <button type="button" class="photo-add-btn" data-k="${k}" data-mode="camera">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      Kamera
+    </button>
+    <button type="button" class="photo-add-btn" data-k="${k}" data-mode="gallery">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+      Galeri
+    </button>
+    <input type="file" accept="image/*" capture="environment" data-k="${k}" class="cleaner-photo-input-camera" style="display:none;">
+    <input type="file" accept="image/*" data-k="${k}" class="cleaner-photo-input-gallery" style="display:none;">`;
 }
-$('cleanerPhotoThumbs').addEventListener('click', e => {
-  const btn = e.target.closest('.photo-remove');
-  if (!btn) return;
-  cleanerPhotos.splice(+btn.dataset.pi, 1);
-  renderCleanerThumbs();
+
+$('cleanerChecklist').addEventListener('click', e => {
+  const btn = e.target.closest('.seg button');
+  if (btn){
+    const k = +btn.dataset.k, v = btn.dataset.v;
+    cleanerAnswers[k] = v;
+    btn.closest('.seg').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    return;
+  }
+  const addBtn = e.target.closest('.photo-add-btn');
+  if (addBtn){
+    const k = +addBtn.dataset.k;
+    const selector = addBtn.dataset.mode === 'camera' ? '.cleaner-photo-input-camera' : '.cleaner-photo-input-gallery';
+    $('cleanerChecklist').querySelector(`#cleanerPhotoRow-${k} ${selector}`).click();
+    return;
+  }
+  const removeBtn = e.target.closest('.photo-remove');
+  if (removeBtn){
+    const k = +removeBtn.dataset.k, pi = +removeBtn.dataset.pi;
+    cleanerPhotos[k].splice(pi, 1);
+    renderCleanerPhotoRow(k);
+  }
 });
+
+$('cleanerChecklist').addEventListener('change', async e => {
+  const input = e.target.closest('.cleaner-photo-input-camera, .cleaner-photo-input-gallery');
+  if (!input || !input.files || !input.files[0]) return;
+  const k = +input.dataset.k;
+  try{
+    const dataUrl = await compressImageToDataUrl(input.files[0]);
+    cleanerPhotos[k].push(dataUrl);
+    renderCleanerPhotoRow(k);
+  }catch(err){
+    showToast('Gagal muat naik gambar, cuba lagi.', true);
+  }
+  input.value = '';
+});
+
+$('cleanerChecklist').addEventListener('input', e => {
+  const ta = e.target.closest('.cleaner-remark-input');
+  if (!ta) return;
+  cleanerRemarks[+ta.dataset.k] = ta.value;
+});
+
 $('cleanerSubmitBtn').addEventListener('click', async () => {
   const ward = $('cleanerWard').value;
   if (!ward){ showToast('Sila pilih ward.', true); return; }
-  if (!cleanerAnswer){ showToast('Sila jawab soalan.', true); return; }
+  if (cleanerAnswers.some(a => a === null)){ showToast('Sila jawab semua soalan.', true); return; }
   if (!currentAuditor){ showToast('Sila log masuk dahulu.', true); return; }
   const payload = {
     formType: 'cleaner_check',
     ward, date: todayISO(), auditor: currentAuditor,
     cleanerName: $('cleanerName').value.trim(),
-    answer: cleanerAnswer,
-    remark: $('cleanerRemark').value.trim(),
-    photos: cleanerPhotos
+    items: CLEANER_ITEMS.map((item, k) => ({
+      text: item.text, ref: item.ref, answer: cleanerAnswers[k], remark: cleanerRemarks[k], photos: cleanerPhotos[k]
+    }))
   };
   $('cleanerSubmitBtn').disabled = true;
   $('cleanerSubmitBtn').textContent = 'Menghantar...';
@@ -2033,10 +2090,11 @@ $('cleanerSubmitBtn').addEventListener('click', async () => {
   }
   $('cleanerSubmitBtn').disabled = false;
   $('cleanerSubmitBtn').textContent = 'Hantar';
-  $('cleanerWard').value = ''; $('cleanerName').value = ''; $('cleanerRemark').value = '';
-  cleanerAnswer = null; cleanerPhotos = [];
-  $('cleanerYesBtn').classList.remove('active'); $('cleanerNoBtn').classList.remove('active');
-  renderCleanerThumbs();
+  $('cleanerWard').value = ''; $('cleanerName').value = '';
+  cleanerAnswers = new Array(CLEANER_ITEMS.length).fill(null);
+  cleanerPhotos = CLEANER_ITEMS.map(() => []);
+  cleanerRemarks = new Array(CLEANER_ITEMS.length).fill('');
+  renderCleanerChecklist();
 });
 
 loadSettings();
