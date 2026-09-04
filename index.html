@@ -462,6 +462,29 @@ input,textarea{font-family:inherit;}
       <div class="qcol-chart" id="questionBars"></div>
       <div class="q-legend" id="questionLegend"></div>
     </div>
+    <div class="card">
+      <h2>Interview Staff Incharge — Kefahaman & Latihan</h2>
+      <div class="dash-note">% staf faham (dari soalan kefahaman) bila jawapan audit "Tidak" — ikut ward yang ditapis di atas</div>
+      <div class="report-summary" style="margin-top:10px;">
+        <div>
+          <div class="stat-big" id="trainingPctStat">—</div>
+          <div class="stat-label">Pernah kursus (Kategori 1: Borang MDRO)</div>
+        </div>
+      </div>
+      <div class="qcol-chart" id="compBars" style="margin-top:6px;"></div>
+      <div class="q-legend" id="compLegend"></div>
+    </div>
+    <div class="card">
+      <h2>Ask Cleaner — Pematuhan mengikut Ward</h2>
+      <div class="dash-note" id="cleanerDashNote">Memuatkan...</div>
+      <div class="qcol-chart" id="cleanerWardBars"></div>
+      <div class="q-legend" id="cleanerWardLegend"></div>
+    </div>
+    <div class="card">
+      <h2>Ask Cleaner — Pematuhan mengikut Bulan</h2>
+      <div class="qcol-chart" id="cleanerMonthBars"></div>
+      <div class="q-legend" id="cleanerMonthLegend"></div>
+    </div>
   </div>
 
   <div class="tab-panel" id="panel-entry">
@@ -1064,6 +1087,18 @@ checklistEl.addEventListener('click', e => {
     renderChecklist();
     return;
   }
+  const fuBtn = e.target.closest('.followup-btn');
+  if (fuBtn){
+    const i = +fuBtn.dataset.i, kind = fuBtn.dataset.kind, v = fuBtn.dataset.v;
+    if (kind === 'training'){
+      followUps[i].training = v;
+    } else {
+      const idx = +fuBtn.dataset.idx;
+      followUps[i].comp[idx] = v;
+    }
+    renderFollowup(i);
+    return;
+  }
   const btn = e.target.closest('.seg button');
   if (btn){
     const i = +btn.dataset.i, j = +btn.dataset.j, v = btn.dataset.v;
@@ -1103,17 +1138,6 @@ checklistEl.addEventListener('click', e => {
     const i = +removeBtn.dataset.i, j = +removeBtn.dataset.j, pi = +removeBtn.dataset.pi;
     subPhotos[i][j].splice(pi, 1);
     renderPhotoRow(i, j);
-  }
-  const fuBtn = e.target.closest('.followup-btn');
-  if (fuBtn){
-    const i = +fuBtn.dataset.i, kind = fuBtn.dataset.kind, v = fuBtn.dataset.v;
-    if (kind === 'training'){
-      followUps[i].training = v;
-    } else {
-      const idx = +fuBtn.dataset.idx;
-      followUps[i].comp[idx] = v;
-    }
-    renderFollowup(i);
   }
 });
 
@@ -1167,7 +1191,8 @@ function renderFollowup(i){
   const c = CRITERIA[i];
   const needsTraining = (i === 0); // hanya kategori 1 tanya soalan "pernah training"; kategori 2-10 terus ke soalan kefahaman
   let html = `<div class="finding-card" style="margin-top:12px; background:var(--paper);">
-    <div class="finding-meta" style="font-weight:800; color:var(--red); margin-bottom:8px;">Exploration — kenapa "Tidak"?</div>`;
+    <div class="finding-meta" style="font-weight:800; color:var(--red); margin-bottom:2px;">Interview Staff Incharge</div>
+    <div class="dash-note" style="margin:0 0 10px;">Exploration — kenapa "Tidak"?</div>`;
   if (needsTraining){
     html += `<div class="finding-q" style="margin-bottom:6px;">${c.trainingQuestion || 'Pernah menghadiri kursus berkaitan kawalan infeksi berkaitan isu ini?'}</div>
     <div class="seg">
@@ -1404,12 +1429,12 @@ function switchTab(tab){
   document.getElementById('panel-' + tab).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelector('.scorebar').style.display = (tab === 'dashboard') ? 'none' : 'flex';
-  if (tab === 'dashboard') loadDashboard();
+  if (tab === 'dashboard'){ loadDashboard(); loadCleanerDashboard(); }
 }
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
-$('refreshDashBtn').addEventListener('click', loadDashboard);
+$('refreshDashBtn').addEventListener('click', () => { loadDashboard(); loadCleanerDashboard(); });
 
 function aggregateByWard(records){
   const byWard = {};
@@ -1479,9 +1504,93 @@ function renderQuestionBars(stats, chartId, legendId){
   ).join('');
 }
 
+// Bar chart generik (label pendek terus di bawah bar) — untuk carta ringkasan Ask Cleaner
+function renderLabeledBars(stats, chartId, legendId){
+  $(chartId).innerHTML = stats.map(s => {
+    const barClass = s.pct === null ? '' : s.pct >= 90 ? '' : s.pct >= 70 ? 'warn' : 'low';
+    const h = s.pct === null ? 0 : s.pct;
+    return `<div class="qcol">
+      <div class="qcol-pct">${s.pct === null ? '—' : s.pct + '%'}</div>
+      <div class="qcol-track"><div class="qcol-bar ${barClass}" style="height:${h}%"></div></div>
+      <div class="qcol-label">${s.shortLabel}</div>
+    </div>`;
+  }).join('');
+  $(legendId).innerHTML = stats.map(s =>
+    `<div class="q-legend-item"><b>${s.shortLabel}.</b><span>${s.label} — ${s.applicable} item dinilai</span></div>`
+  ).join('') || '<div class="empty-hist">Tiada data lagi.</div>';
+}
+
+function cleanerItemStats(items){
+  let yes = 0, applicable = 0;
+  (items || []).forEach(it => {
+    const v = (it.answer || '').toString().toLowerCase();
+    if (v === 'yes' || v === 'no'){ applicable++; if (v === 'yes') yes++; }
+  });
+  return {yes, applicable};
+}
+
+let lastCleanerRecords = [];
+
+async function loadCleanerDashboard(){
+  $('cleanerDashNote').textContent = 'Memuatkan...';
+  let records = [];
+  if (scriptUrl){
+    try{
+      const res = await fetch(scriptUrl + '?type=cleaner', {method: 'GET'});
+      const json = await res.json();
+      if (json && Array.isArray(json.records)) records = json.records;
+    }catch(e){ records = []; }
+  }
+  lastCleanerRecords = records;
+  $('cleanerDashNote').textContent = records.length ? `${records.length} sesi Ask Cleaner direkod` : 'Tiada data Ask Cleaner lagi';
+  renderCleanerWardChart(records);
+  renderCleanerMonthChart(records);
+}
+
+function renderCleanerWardChart(records){
+  const grouped = {};
+  records.forEach(r => {
+    const w = r.ward || 'Lain-lain';
+    if (!grouped[w]) grouped[w] = {yes: 0, applicable: 0};
+    const {yes, applicable} = cleanerItemStats(r.items);
+    grouped[w].yes += yes;
+    grouped[w].applicable += applicable;
+  });
+  const stats = Object.keys(grouped).sort().map(w => {
+    const g = grouped[w];
+    return {shortLabel: w, label: w, pct: g.applicable ? Math.round(g.yes / g.applicable * 100) : null, applicable: g.applicable};
+  });
+  renderLabeledBars(stats, 'cleanerWardBars', 'cleanerWardLegend');
+}
+
+function renderCleanerMonthChart(records){
+  const MONTH_SHORT_MS = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
+  const grouped = {};
+  records.forEach(r => {
+    const m = (r.date || '').slice(0,7);
+    if (!m) return;
+    if (!grouped[m]) grouped[m] = {yes: 0, applicable: 0};
+    const {yes, applicable} = cleanerItemStats(r.items);
+    grouped[m].yes += yes;
+    grouped[m].applicable += applicable;
+  });
+  const stats = Object.keys(grouped).sort().map(m => {
+    const [y, mo] = m.split('-');
+    const g = grouped[m];
+    return {
+      shortLabel: MONTH_SHORT_MS[(+mo)-1] + ' ' + y.slice(2),
+      label: MONTH_SHORT_MS[(+mo)-1] + ' ' + y,
+      pct: g.applicable ? Math.round(g.yes / g.applicable * 100) : null,
+      applicable: g.applicable
+    };
+  });
+  renderLabeledBars(stats, 'cleanerMonthBars', 'cleanerMonthLegend');
+}
+
 let lastRecords = [];
 $('dashWardFilter').addEventListener('change', () => {
   renderQuestionBars(computeQuestionStats(filteredRecords(), $('dashWardFilter').value));
+  renderComprehensionPanel(filteredRecords(), $('dashWardFilter').value);
 });
 
 // ---- Tempoh filter (Semua / Bulan / Minggu Epid) ----
@@ -1596,7 +1705,43 @@ function applyDashboardFilters(){
   const records = filteredRecords();
   renderDashboard(records);
   renderQuestionBars(computeQuestionStats(records, $('dashWardFilter').value));
+  renderComprehensionPanel(records, $('dashWardFilter').value);
   renderDraftPanel(records);
+}
+
+function computeComprehensionStats(records, wardFilter){
+  const filtered = wardFilter === 'ALL' ? records : records.filter(r => r.ward === wardFilter);
+  return CRITERIA.map((c, i) => {
+    let yes = 0, applicable = 0;
+    filtered.forEach(r => {
+      const cat = r.categories && r.categories[i];
+      if (!cat || !Array.isArray(cat.comp)) return;
+      cat.comp.forEach(v => {
+        const vv = (v || '').toString().toLowerCase();
+        if (vv === 'yes' || vv === 'no'){ applicable++; if (vv === 'yes') yes++; }
+      });
+    });
+    const pct = applicable ? Math.round((yes / applicable) * 100) : null;
+    return {label: c.title, pct, applicable};
+  });
+}
+
+function computeTrainingStat(records, wardFilter){
+  const filtered = wardFilter === 'ALL' ? records : records.filter(r => r.ward === wardFilter);
+  let yes = 0, applicable = 0;
+  filtered.forEach(r => {
+    const cat = r.categories && r.categories[0];
+    if (!cat) return;
+    const v = (cat.training || '').toString().toLowerCase();
+    if (v === 'yes' || v === 'no'){ applicable++; if (v === 'yes') yes++; }
+  });
+  return applicable ? Math.round((yes / applicable) * 100) : null;
+}
+
+function renderComprehensionPanel(records, wardFilter){
+  const trainingPct = computeTrainingStat(records, wardFilter);
+  $('trainingPctStat').textContent = trainingPct === null ? '—' : trainingPct + '%';
+  renderQuestionBars(computeComprehensionStats(records, wardFilter), 'compBars', 'compLegend');
 }
 
 function renderDraftPanel(records){
@@ -2105,7 +2250,7 @@ initLogin();
 
 (async function initSplash(){
   const minShow = new Promise(resolve => setTimeout(resolve, 900));
-  await Promise.all([loadDashboard(), minShow]);
+  await Promise.all([loadDashboard(), loadCleanerDashboard(), minShow]);
   const splash = document.getElementById('splashScreen');
   if (splash) splash.classList.add('hide');
 })();
