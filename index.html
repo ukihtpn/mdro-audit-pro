@@ -526,6 +526,13 @@ input,textarea{font-family:inherit;}
         <option value="W8">W8</option>
       </select>
     </div>
+    <div class="field" id="disciplineWrap" style="display:none;">
+      <label>Disiplin (wad multidisiplin)</label>
+      <div class="seg" id="disciplineSeg">
+        <button type="button" class="plain" data-disc="Surgical">Surgical</button>
+        <button type="button" class="plain" data-disc="Ortho">Ortho</button>
+      </div>
+    </div>
     <div class="field">
       <label for="bed">Bed</label>
       <input type="text" id="bed" placeholder="No. katil">
@@ -872,6 +879,8 @@ let remarks = new Array(CRITERIA.length).fill(''); // catatan per kategori (pili
 let followUps = CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
 let openIndex = -1; // accordion: hanya satu kategori terbuka pada satu masa
 let organisms = []; // boleh pilih lebih dari satu kuman
+let discipline = ''; // Surgical / Ortho — hanya untuk wad multidisiplin (W4, W7)
+const MULTIDISCIPLINE_WARDS = ['W4','W7'];
 let isolationType = null; // 'Isolasi' | 'Cohort' — untuk kategori "Pengasingan Pesakit"
 let likeAppFlag = "Suka";
 let feedbackScore = "";
@@ -917,6 +926,24 @@ $('cleanerDateDisplay').textContent = new Date().toLocaleDateString('ms-MY');
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
 // Kuman (organism) — chip multi-pilih
+// Ward — papar pilihan disiplin hanya untuk wad multidisiplin (W4, W7)
+function syncDisciplineField(){
+  const isMulti = MULTIDISCIPLINE_WARDS.includes($('ward').value);
+  $('disciplineWrap').style.display = isMulti ? 'block' : 'none';
+  if (!isMulti) discipline = '';
+  $('disciplineSeg').querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.disc === discipline);
+  });
+}
+$('ward').addEventListener('change', syncDisciplineField);
+$('disciplineSeg').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  discipline = btn.dataset.disc;
+  $('disciplineSeg').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+});
+
 $('organismChips').addEventListener('click', e => {
   const chip = e.target.closest('.chip');
   if (!chip) return;
@@ -1342,7 +1369,9 @@ async function saveLog(log){
 }
 
 function computeAuditStatus(){
-  const patientOk = $('patientName').value.trim() && $('patientRN').value.trim() && $('ward').value && $('bed').value.trim() && organisms.length > 0;
+  const wardVal = $('ward').value;
+  const disciplineOk = !MULTIDISCIPLINE_WARDS.includes(wardVal) || !!discipline;
+  const patientOk = $('patientName').value.trim() && $('patientRN').value.trim() && wardVal && $('bed').value.trim() && organisms.length > 0 && disciplineOk;
   const allAnswered = subAnswers.every(arr => arr.every(a => a !== null));
   const allFollowUpsDone = CRITERIA.every((c, i) => isFollowupComplete(i));
   return (patientOk && allAnswered && allFollowUpsDone) ? 'Lengkap' : 'Draft';
@@ -1367,7 +1396,7 @@ $('submitBtn').addEventListener('click', async () => {
   const finalOrganism = finalOrganismString();
 
   const payload = {
-    ward, bed, date, auditor: currentAuditor,
+    ward, discipline, bed, date, auditor: currentAuditor,
     patientName: $('patientName').value.trim(),
     patientIC: $('patientIC').value.trim(),
     patientRN: $('patientRN').value.trim(),
@@ -1430,6 +1459,7 @@ $('saveDraftBtn').addEventListener('click', async () => {
   const draft = {
     auditor: currentAuditor,
     ward: $('ward').value,
+    discipline,
     bed: $('bed').value,
     patientName: $('patientName').value,
     patientIC: $('patientIC').value,
@@ -1454,6 +1484,8 @@ function loadDraftIntoForm(d){
   currentAuditor = d.auditor || currentAuditor;
   applyAuditor();
   $('ward').value = d.ward || '';
+  discipline = d.discipline || '';
+  syncDisciplineField();
   $('bed').value = d.bed || '';
   $('patientName').value = d.patientName || '';
   $('patientIC').value = d.patientIC || '';
@@ -1526,7 +1558,7 @@ function resetForm(){
   openIndex = -1;
   renderChecklist();
   $('improvement').value = ''; $('problems').value = '';
-  $('ward').value = ''; $('bed').value = '';
+  $('ward').value = ''; $('bed').value = ''; discipline = ''; syncDisciplineField();
   $('patientName').value = ''; $('patientIC').value = ''; $('patientRN').value = ''; $('admissionDate').value = '';
   organisms = []; $('organismOtherInput').value = ''; syncOrganismChips();
   $('ocrStatus').textContent = 'Imbas label pesakit untuk auto-isi Nama/IC/RN/Tarikh Admission (semak semula ketepatan).';
@@ -1990,7 +2022,7 @@ function buildFindingCard(r){
   const statusBadgeClass = r.status === 'Lengkap' ? 'ok' : 'na';
   return `<div class="finding-card">
     <div class="finding-head">
-      <span class="finding-ward">${escapeHtml(r.ward)}</span>
+      <span class="finding-ward">${escapeHtml(r.ward)}${r.discipline ? " (" + escapeHtml(r.discipline) + ")" : ""}</span>
       <span class="finding-date">${escapeHtml(r.date || '')}</span>
       <span class="finding-badge ${statusBadgeClass}">${escapeHtml(r.status || '')}</span>
       <span class="finding-pct">${r.compliancePercent !== undefined && r.compliancePercent !== '' ? r.compliancePercent + '%' : ''}</span>
@@ -2045,6 +2077,118 @@ $('printReportBtn').addEventListener('click', () => {
   setTimeout(() => panel.classList.remove('print-active'), 500);
 });
 
+// ---- Analitik untuk laporan ----
+// Kira pematuhan per ward
+function analyseByWard(records){
+  const g = {};
+  records.forEach(r => {
+    const w = r.ward || 'Lain-lain';
+    if (!g[w]) g[w] = {yes:0, applicable:0, audits:0};
+    g[w].audits++;
+    (r.categories || []).forEach(cat => {
+      (cat.items || []).forEach(it => {
+        const v = (it.answer || '').toString().toLowerCase();
+        if (v === 'yes' || v === 'no'){ g[w].applicable++; if (v === 'yes') g[w].yes++; }
+      });
+    });
+  });
+  return Object.keys(g).sort().map(w => ({
+    ward: w, audits: g[w].audits,
+    pct: g[w].applicable ? Math.round(g[w].yes / g[w].applicable * 100) : null
+  }));
+}
+
+// Kira sub-item yang paling kerap "Tidak" (punca utama ketidakpatuhan)
+function analyseTopFailures(records){
+  const map = {};
+  records.forEach(r => {
+    (r.categories || []).forEach((cat, ci) => {
+      (cat.items || []).forEach((it, ii) => {
+        const v = (it.answer || '').toString().toLowerCase();
+        if (v !== 'yes' && v !== 'no') return;
+        const key = ci + '|' + ii;
+        if (!map[key]) map[key] = {
+          label: it.text || ((CRITERIA[ci] && CRITERIA[ci].items[ii]) ? itemText(CRITERIA[ci].items[ii]) : ''),
+          category: cat.title || (CRITERIA[ci] ? CRITERIA[ci].title : ''),
+          no: 0, total: 0
+        };
+        map[key].total++;
+        if (v === 'no') map[key].no++;
+      });
+    });
+  });
+  return Object.values(map)
+    .filter(x => x.no > 0)
+    .map(x => ({...x, failPct: Math.round(x.no / x.total * 100)}))
+    .sort((a,b) => b.failPct - a.failPct || b.no - a.no);
+}
+
+// Kira jurang kefahaman & latihan dari sesi Interview Staff Incharge
+function analyseKnowledgeGap(records){
+  let compYes = 0, compTotal = 0, trainYes = 0, trainTotal = 0;
+  const perCategory = CRITERIA.map(c => ({title: c.title, yes: 0, total: 0}));
+  records.forEach(r => {
+    (r.categories || []).forEach((cat, ci) => {
+      (cat.comp || []).forEach(v => {
+        const vv = (v || '').toString().toLowerCase();
+        if (vv === 'yes' || vv === 'no'){
+          compTotal++; if (vv === 'yes') compYes++;
+          if (perCategory[ci]){ perCategory[ci].total++; if (vv === 'yes') perCategory[ci].yes++; }
+        }
+      });
+      const t = (cat.training || '').toString().toLowerCase();
+      if (t === 'yes' || t === 'no'){ trainTotal++; if (t === 'yes') trainYes++; }
+    });
+  });
+  return {
+    compPct: compTotal ? Math.round(compYes / compTotal * 100) : null,
+    compTotal,
+    trainPct: trainTotal ? Math.round(trainYes / trainTotal * 100) : null,
+    trainTotal,
+    weakCategories: perCategory
+      .map(pc => ({...pc, pct: pc.total ? Math.round(pc.yes / pc.total * 100) : null}))
+      .filter(pc => pc.pct !== null && pc.pct < 80)
+      .sort((a,b) => a.pct - b.pct)
+  };
+}
+
+// Jana cadangan automatik berdasarkan dapatan sebenar
+function buildRecommendations(topFailures, knowledge, wardStats, overallPct){
+  const recs = [];
+  const TARGET = 90;
+
+  topFailures.slice(0, 5).forEach(f => {
+    if (f.failPct >= 50){
+      recs.push(`<b>${escapeHtml(f.category)}</b> — "${escapeHtml(f.label)}" gagal pada ${f.failPct}% audit (${f.no}/${f.total}). Tindakan segera: kenal pasti halangan di lapangan, pastikan bekalan/peralatan mencukupi, dan tetapkan pemilik tindakan serta tarikh semakan semula.`);
+    } else if (f.failPct >= 25){
+      recs.push(`<b>${escapeHtml(f.category)}</b> — "${escapeHtml(f.label)}" gagal pada ${f.failPct}% audit (${f.no}/${f.total}). Cadangan: peringatan berkala semasa <i>ward handover</i> dan pemantauan susulan pada pusingan audit seterusnya.`);
+    }
+  });
+
+  if (knowledge.compPct !== null && knowledge.compPct < 80){
+    recs.push(`Kefahaman staf semasa <i>Interview Staff Incharge</i> hanya ${knowledge.compPct}% (${knowledge.compTotal} soalan dinilai). Cadangan: sesi <i>refresher training</i> / CNE berfokus, dan penilaian kefahaman semula selepas latihan.`);
+  }
+  knowledge.weakCategories.slice(0, 3).forEach(wc => {
+    recs.push(`Jurang kefahaman dikenal pasti dalam topik <b>${escapeHtml(wc.title)}</b> (${wc.pct}% jawapan betul). Cadangan: sesi pengajaran khusus topik ini dan sediakan bahan rujukan ringkas di wad.`);
+  });
+  if (knowledge.trainPct !== null && knowledge.trainPct < 80){
+    recs.push(`Hanya ${knowledge.trainPct}% staf yang ditemubual pernah menghadiri kursus berkaitan. Cadangan: kemas kini rekod kehadiran latihan dan rancang latihan untuk staf yang belum dilatih.`);
+  }
+
+  const weakWards = wardStats.filter(w => w.pct !== null && w.pct < TARGET).sort((a,b) => a.pct - b.pct);
+  if (weakWards.length){
+    recs.push(`Wad di bawah sasaran ${TARGET}%: ${weakWards.map(w => `${escapeHtml(w.ward)} (${w.pct}%)`).join(', ')}. Cadangan: pemantauan lebih kerap dan sesi maklum balas bersama Ketua Jururawat wad berkenaan.`);
+  }
+
+  if (overallPct !== null && overallPct >= TARGET && !recs.length){
+    recs.push(`Pematuhan keseluruhan mencapai sasaran (${overallPct}%). Cadangan: kekalkan amalan semasa dan teruskan pemantauan berkala bagi memastikan pencapaian berterusan.`);
+  }
+  if (!recs.length){
+    recs.push('Tiada isu ketidakpatuhan ketara dikenal pasti bagi tempoh ini.');
+  }
+  return recs;
+}
+
 function buildReportWordHtml(records, stats, photoMap){
   photoMap = photoMap || {};
   const wardVal = $('reportWardFilter').value;
@@ -2060,6 +2204,7 @@ function buildReportWordHtml(records, stats, photoMap){
   records.forEach(r => { const p = Number(r.compliancePercent); if (!isNaN(p)){ sum += p; count++; } });
   const overallPct = count ? Math.round(sum / count) : null;
   const genDate = new Date().toLocaleDateString('ms-MY');
+  const TARGET = 90;
 
   const dates = records.map(r => r.date).filter(Boolean).sort();
   const dateRangeLabel = dates.length
@@ -2067,10 +2212,19 @@ function buildReportWordHtml(records, stats, photoMap){
     : '—';
   const auditors = Array.from(new Set(records.map(r => r.auditor).filter(Boolean)));
   const auditorLabel = auditors.length ? auditors.join(', ') : '—';
+  const organismList = Array.from(new Set(records.flatMap(r => (r.organism || '').split(',').map(s => s.trim()).filter(Boolean))));
+  const disciplineList = Array.from(new Set(records.map(r => r.discipline).filter(Boolean)));
+  const draftCount = records.filter(r => r.status === 'Draft').length;
+
+  const wardStats = analyseByWard(records);
+  const topFailures = analyseTopFailures(records);
+  const knowledge = analyseKnowledgeGap(records);
+  const recommendations = buildRecommendations(topFailures, knowledge, wardStats, overallPct);
 
   const F = "font-family:Calibri,Arial,sans-serif; font-size:11pt;";
   const TD = "border:1px solid #000; padding:6px 8px; vertical-align:top;";
   const TH = TD + "background:#EFE7FC; font-weight:bold;";
+  const H = `${F}font-weight:bold; margin-top:16px;`;
 
   let html = `<div style="${F}text-align:center;">
     <p style="font-weight:bold; font-size:13pt;">LAPORAN AUDIT PEMATUHAN PENGURUSAN<br>MULTIDRUG-RESISTANT ORGANISMS (MDRO)<br>DI HOSPITAL TENGKU PERMAISURI NORASHIKIN KAJANG</p>
@@ -2079,19 +2233,73 @@ function buildReportWordHtml(records, stats, photoMap){
     <tr><td style="${TH}width:26%;">Tarikh Audit:</td><td style="${TD}width:24%;">${escapeHtml(dateRangeLabel)}</td><td style="${TH}width:26%;">Tempoh Laporan:</td><td style="${TD}width:24%;">${escapeHtml(periodLabel)}</td></tr>
     <tr><td style="${TH}">Lokasi (Ward):</td><td style="${TD}" colspan="3">${escapeHtml(wardLabel)}</td></tr>
     <tr><td style="${TH}">Audit dijalankan oleh:</td><td style="${TD}" colspan="3">${escapeHtml(auditorLabel)}</td></tr>
+    <tr><td style="${TH}">Disiplin:</td><td style="${TD}" colspan="3">${disciplineList.length ? escapeHtml(disciplineList.join(', ')) : '—'}</td></tr>
+    <tr><td style="${TH}">Organisma dikesan:</td><td style="${TD}" colspan="3">${organismList.length ? escapeHtml(organismList.join(', ')) : '—'}</td></tr>
     <tr><td style="${TH}">Wakil Jabatan:</td><td style="${TD}" colspan="3">&nbsp;</td></tr>
   </table>
 
-  <p style="${F}font-weight:bold; margin-top:16px;">1. Tujuan</p>
-  <p style="${F}">Laporan ini disediakan bagi melaporkan hasil audit pematuhan pengurusan pesakit <i>Multidrug-Resistant Organisms</i> (MDRO) di ${escapeHtml(wardLabel)} bagi tempoh ${escapeHtml(periodLabel)}, meliputi aspek checklist MDRO, signage, kesediaan PPE, dan pengurusan sisa klinikal.</p>
+  <p style="${H}">1. Tujuan</p>
+  <p style="${F}">Laporan ini disediakan bagi melaporkan hasil audit pematuhan pengurusan pesakit <i>Multidrug-Resistant Organisms</i> (MDRO) di ${escapeHtml(wardLabel)} bagi tempoh ${escapeHtml(periodLabel)}, meliputi aspek kesediaan borang MDRO checklist, pengasingan pesakit, signage, kebersihan tangan, PPE, peralatan khusus, pengurusan sisa klinikal, mandian harian, dan pendidikan pesakit.</p>
 
-  <p style="${F}font-weight:bold; margin-top:16px;">2. Hasil Pemerhatian</p>
-  <p style="${F}">Sepanjang tempoh audit, sebanyak <b>${records.length}</b> audit telah direkodkan di ${escapeHtml(wardLabel)}, dengan purata keseluruhan pematuhan sebanyak <b>${overallPct === null ? '—' : overallPct + '%'}</b>.</p>
+  <p style="${H}">2. Metodologi</p>
+  <p style="${F}">Audit dijalankan secara pemerhatian terus di lokasi pesakit menggunakan senarai semak MDRO standard Unit Kawalan Infeksi (${CRITERIA.length} kategori, ${CRITERIA.reduce((n,c)=>n+c.items.length,0)} item penilaian). Bagi setiap item yang didapati <i>Tidak Patuh</i>, sesi <i>Interview Staff Incharge</i> dijalankan untuk meneroka punca melalui soalan kefahaman berkaitan topik tersebut. Bukti bergambar direkodkan bagi dapatan yang berkaitan.</p>
 
-  <p style="${F}font-weight:bold; margin-top:16px;">3. Penilaian Aspek Kawalan Infeksi</p>
-  <p style="${F}">Penilaian dijalankan berdasarkan kriteria audit standard unit Kawalan Infeksi merangkumi checklist MDRO, signage, PPE, dan pengurusan sisa klinikal. Dapatan terperinci bagi setiap kriteria adalah seperti dalam jadual di bawah.</p>
+  <p style="${H}">3. Ringkasan Eksekutif</p>
+  <table style="border-collapse:collapse; width:100%; ${F}">
+    <tr><td style="${TH}width:50%;">Jumlah audit direkodkan</td><td style="${TD}">${records.length}${draftCount ? ` (termasuk ${draftCount} draf belum lengkap)` : ''}</td></tr>
+    <tr><td style="${TH}">Purata pematuhan keseluruhan</td><td style="${TD}"><b>${overallPct === null ? '—' : overallPct + '%'}</b> (sasaran ${TARGET}%)</td></tr>
+    <tr><td style="${TH}">Status pencapaian sasaran</td><td style="${TD}">${overallPct === null ? '—' : (overallPct >= TARGET ? 'TERCAPAI' : 'TIDAK TERCAPAI')}</td></tr>
+    <tr><td style="${TH}">Kefahaman staf (Interview Staff Incharge)</td><td style="${TD}">${knowledge.compPct === null ? 'Tiada sesi interview direkod' : knowledge.compPct + '% jawapan betul (' + knowledge.compTotal + ' soalan)'}</td></tr>
+    <tr><td style="${TH}">Staf pernah menghadiri kursus berkaitan</td><td style="${TD}">${knowledge.trainPct === null ? '—' : knowledge.trainPct + '% (' + knowledge.trainTotal + ' staf ditemubual)'}</td></tr>
+  </table>`;
 
-  <p style="${F}font-weight:bold; margin-top:16px; text-align:center;">PEMANTAUAN UNIT KAWALAN INFEKSI — PEMATUHAN MDRO</p>
+  // 4. Analisis pematuhan mengikut ward
+  if (wardStats.length > 1 || wardVal === 'ALL'){
+    html += `<p style="${H}">4. Analisis Pematuhan Mengikut Ward</p>
+    <table style="border-collapse:collapse; width:100%; ${F}">
+      <tr><td style="${TH}">Ward</td><td style="${TH}">Bil. Audit</td><td style="${TH}">% Pematuhan</td><td style="${TH}">Status (sasaran ${TARGET}%)</td></tr>
+      ${wardStats.map(w => `<tr>
+        <td style="${TD}">${escapeHtml(w.ward)}</td>
+        <td style="${TD}text-align:center;">${w.audits}</td>
+        <td style="${TD}text-align:center;">${w.pct === null ? '—' : w.pct + '%'}</td>
+        <td style="${TD}text-align:center;">${w.pct === null ? '—' : (w.pct >= TARGET ? 'Tercapai' : 'Tidak tercapai')}</td>
+      </tr>`).join('')}
+    </table>`;
+  }
+
+  // 5. Analisis dapatan utama (punca ketidakpatuhan)
+  html += `<p style="${H}">5. Analisis Dapatan Utama (Isu Paling Kerap Tidak Patuh)</p>`;
+  if (!topFailures.length){
+    html += `<p style="${F}">Tiada item ketidakpatuhan direkodkan bagi tempoh ini.</p>`;
+  } else {
+    html += `<table style="border-collapse:collapse; width:100%; ${F}">
+      <tr><td style="${TH}width:5%;">Bil</td><td style="${TH}width:30%;">Kategori</td><td style="${TH}width:40%;">Item Tidak Patuh</td><td style="${TH}width:25%;">Kadar Gagal</td></tr>
+      ${topFailures.slice(0, 10).map((f, n) => `<tr>
+        <td style="${TD}text-align:center;">${n+1}</td>
+        <td style="${TD}">${escapeHtml(f.category)}</td>
+        <td style="${TD}">${escapeHtml(f.label)}</td>
+        <td style="${TD}text-align:center;">${f.failPct}% (${f.no}/${f.total})</td>
+      </tr>`).join('')}
+    </table>`;
+  }
+
+  // 6. Analisis kefahaman staf
+  html += `<p style="${H}">6. Analisis Kefahaman Staf (Punca Akar)</p>`;
+  if (knowledge.compPct === null){
+    html += `<p style="${F}">Tiada sesi <i>Interview Staff Incharge</i> direkodkan bagi tempoh ini (tiada item didapati tidak patuh, atau interview belum dilengkapkan).</p>`;
+  } else {
+    html += `<p style="${F}">Sebanyak ${knowledge.compTotal} soalan kefahaman telah dikemukakan kepada staf bertugas bagi item yang didapati tidak patuh, dengan ${knowledge.compPct}% jawapan betul. `;
+    html += knowledge.weakCategories.length
+      ? `Topik dengan tahap kefahaman terendah adalah seperti berikut:</p>
+      <table style="border-collapse:collapse; width:100%; ${F}">
+        <tr><td style="${TH}width:70%;">Topik</td><td style="${TH}">% Kefahaman</td></tr>
+        ${knowledge.weakCategories.map(wc => `<tr><td style="${TD}">${escapeHtml(wc.title)}</td><td style="${TD}text-align:center;">${wc.pct}%</td></tr>`).join('')}
+      </table>`
+      : `Tiada topik yang menunjukkan jurang kefahaman ketara (semua melebihi 80%).</p>`;
+  }
+
+  // 7. Jadual pemantauan terperinci
+  html += `<p style="${H}">7. Pemantauan Terperinci Mengikut Kategori</p>
   <table style="border-collapse:collapse; width:100%; ${F}">
     <tr>
       <td style="${TH}width:4%;">No</td>
@@ -2128,40 +2336,74 @@ function buildReportWordHtml(records, stats, photoMap){
     });
     if (!photosHtml) photosHtml = '—';
 
+    // Cadangan khusus kategori ini, dijana dari item yang gagal
+    const catFailures = topFailures.filter(f => f.category === c.title);
+    const catRec = catFailures.length
+      ? catFailures.slice(0,3).map(f => `• ${escapeHtml(f.label)} — gagal ${f.failPct}%`).join('<br>')
+      : (s.pct !== null && s.pct >= TARGET ? 'Kekalkan amalan semasa.' : '—');
+
     html += `<tr>
       <td style="${TD}text-align:center;">${idx}</td>
       <td style="${TD}">${escapeHtml(c.title)}</td>
       <td style="${TD}">${pctText}${remarksHtml}</td>
       <td style="${TD}">${photosHtml}</td>
-      <td style="${TD}">(Untuk diisi oleh Pegawai Kawalan Jangkitan)</td>
+      <td style="${TD}">${catRec}</td>
     </tr>`;
   });
 
   html += `</table>
 
-  <p style="${F}font-weight:bold; margin-top:16px;">4. Cadangan Lain</p>
-  <p style="${F}">(Untuk diisi oleh Pegawai Kawalan Jangkitan)</p>
+  <p style="${H}">8. Cadangan Penambahbaikan</p>
+  <table style="border-collapse:collapse; width:100%; ${F}">
+    <tr><td style="${TH}width:5%;">Bil</td><td style="${TH}width:65%;">Cadangan</td><td style="${TH}width:15%;">Pemilik Tindakan</td><td style="${TH}width:15%;">Tarikh Sasaran</td></tr>
+    ${recommendations.map((rec, n) => `<tr>
+      <td style="${TD}text-align:center;">${n+1}</td>
+      <td style="${TD}">${rec}</td>
+      <td style="${TD}">&nbsp;</td>
+      <td style="${TD}">&nbsp;</td>
+    </tr>`).join('')}
+  </table>
 
-  <p style="${F}font-weight:bold; margin-top:16px;">5. Kesimpulan</p>
-  <p style="${F}">${buildKesimpulanText(overallPct, wardLabel)}</p>
+  <p style="${H}">9. Kesimpulan</p>
+  <p style="${F}">${buildKesimpulanText(overallPct, wardLabel, topFailures, knowledge)}</p>
 
-  <p style="${F}margin-top:24px;">Disediakan oleh: ____________________________</p>
-  <p style="${F}">Tarikh Laporan Dijana: ${genDate}</p>`;
+  <p style="${H}">10. Pemantauan Susulan</p>
+  <p style="${F}">Audit susulan akan dijalankan pada pusingan seterusnya bagi menilai keberkesanan tindakan penambahbaikan yang dicadangkan. Wad yang belum mencapai sasaran ${TARGET}% akan diberi keutamaan pemantauan.</p>
+
+  <table style="width:100%; ${F}margin-top:28px;">
+    <tr>
+      <td style="width:50%;">Disediakan oleh:<br><br>____________________________<br>Pegawai Kawalan Jangkitan<br>Unit Kawalan Infeksi, HTPN</td>
+      <td style="width:50%;">Disemak oleh:<br><br>____________________________<br>Ketua Unit Kawalan Infeksi</td>
+    </tr>
+  </table>
+  <p style="${F}margin-top:12px; font-size:9pt; color:#666;">Tarikh laporan dijana: ${genDate}</p>`;
 
   return html;
 }
 
-function buildKesimpulanText(overallPct, wardLabel){
+function buildKesimpulanText(overallPct, wardLabel, topFailures, knowledge){
   if (overallPct === null){
     return `Tiada data pematuhan yang mencukupi bagi ${escapeHtml(wardLabel)} pada tempoh ini untuk membuat penilaian.`;
   }
+  let txt = '';
   if (overallPct >= 90){
-    return `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>BAIK</b> (${overallPct}%). Amalan sedia ada perlu dikekalkan dan dipantau secara berterusan.`;
+    txt = `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>BAIK</b> (${overallPct}%) dan telah mencapai sasaran 90%. `;
+  } else if (overallPct >= 70){
+    txt = `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>SEDERHANA</b> (${overallPct}%) dan belum mencapai sasaran 90%. `;
+  } else {
+    txt = `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>RENDAH</b> (${overallPct}%). Tindakan penambahbaikan segera diperlukan bagi mengurangkan risiko penularan jangkitan silang. `;
   }
-  if (overallPct >= 70){
-    return `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>SEDERHANA</b> (${overallPct}%). Penambahbaikan diperlukan pada aspek yang dikenal pasti tidak patuh dalam jadual di atas.`;
+  if (topFailures && topFailures.length){
+    const top = topFailures[0];
+    txt += `Isu paling kerap dikenal pasti ialah "${escapeHtml(top.label)}" (gagal ${top.failPct}% audit). `;
   }
-  return `Tahap pematuhan pengurusan MDRO di ${escapeHtml(wardLabel)} adalah <b>RENDAH</b> (${overallPct}%). Tindakan penambahbaikan segera diperlukan bagi mengurangkan risiko penularan jangkitan silang.`;
+  if (knowledge && knowledge.compPct !== null && knowledge.compPct < 80){
+    txt += `Analisis punca akar menunjukkan jurang kefahaman staf (${knowledge.compPct}% jawapan betul), justeru intervensi latihan disyorkan selain penambahbaikan proses. `;
+  } else if (knowledge && knowledge.compPct !== null){
+    txt += `Kefahaman staf berada pada tahap memuaskan (${knowledge.compPct}%), menunjukkan isu ketidakpatuhan lebih berkait dengan faktor proses atau sumber berbanding pengetahuan. `;
+  }
+  txt += `Pemantauan berterusan dan tindakan susulan seperti dalam Seksyen 8 adalah disyorkan.`;
+  return txt;
 }
 
 function extractDriveFileId(url){
