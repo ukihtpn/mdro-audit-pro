@@ -438,6 +438,11 @@ input,textarea{font-family:inherit;}
       <div id="draftList" style="margin-top:10px;"></div>
     </div>
     <div class="card">
+      <h2>Draf Disimpan (belum hantar — peranti ini)</h2>
+      <div class="dash-note">Draf yang disimpan auditor semasa tengah buat audit. Tekan "Sambung" untuk teruskan.</div>
+      <div id="localDraftList" style="margin-top:10px;">Memuatkan...</div>
+    </div>
+    <div class="card">
       <h2>Pematuhan by ward</h2>
       <div class="dash-note" id="dashSourceNote">Memuatkan...</div>
       <div id="wardBars"></div>
@@ -554,19 +559,18 @@ input,textarea{font-family:inherit;}
       <input type="date" id="admissionDate">
     </div>
     <div class="field">
-      <label for="organism">Kuman (isolate organism)</label>
-      <select id="organism">
-        <option value="">Pilih kuman</option>
-        <option value="MRSA">MRSA</option>
-        <option value="CRE">CRE</option>
-        <option value="ESBL K.PNEUMONIAE">ESBL K. PNEUMONIAE</option>
-        <option value="ESBL E.COLI">ESBL E. COLI</option>
-        <option value="MRO">MRO</option>
-        <option value="A.BAUMANNII">A. BAUMANNII</option>
-        <option value="VRE">VRE</option>
-        <option value="Lain-lain">Lain-lain</option>
-      </select>
-      <input type="text" class="chip-other-input" id="organismOtherInput" placeholder="Nyatakan kuman" style="margin-top:8px; width:100%; border-radius:9px; display:none;">
+      <label>Kuman (isolate organism) — boleh pilih lebih dari satu</label>
+      <div class="chiprow" id="organismChips">
+        <button type="button" class="chip" data-org="MRSA">MRSA</button>
+        <button type="button" class="chip" data-org="CRE">CRE</button>
+        <button type="button" class="chip" data-org="ESBL K.PNEUMONIAE">ESBL K. PNEUMONIAE</button>
+        <button type="button" class="chip" data-org="ESBL E.COLI">ESBL E. COLI</button>
+        <button type="button" class="chip" data-org="MRO">MRO</button>
+        <button type="button" class="chip" data-org="A.BAUMANNII">A. BAUMANNII</button>
+        <button type="button" class="chip" data-org="VRE">VRE</button>
+        <button type="button" class="chip" data-org="Lain-lain">Lain-lain</button>
+      </div>
+      <input type="text" class="chip-other-input" id="organismOtherInput" placeholder="Nyatakan kuman lain" style="margin-top:8px; width:100%; border-radius:9px; display:none;">
     </div>
   </div>
 
@@ -574,12 +578,6 @@ input,textarea{font-family:inherit;}
     <h2><span class="num">3</span>Audit Pematuhan</h2>
     <div class="dash-note" id="progressNote">0 / 9 soalan lengkap</div>
     <div id="checklist"></div>
-  </div>
-
-  <div class="card">
-    <h2><span class="num">4</span>Tandatangan Jururawat Y/M</h2>
-    <canvas id="sigPad" width="600" height="180" style="width:100%; height:140px; border:1.5px solid var(--line); border-radius:12px; touch-action:none; background:#fff;"></canvas>
-    <button type="button" class="ghost-btn" id="clearSigBtn" style="margin-top:8px;">Kosongkan tandatangan</button>
   </div>
   </div>
 
@@ -603,6 +601,10 @@ input,textarea{font-family:inherit;}
     <div class="field">
       <label for="cleanerName">Nama cleaner (pilihan)</label>
       <input type="text" id="cleanerName" placeholder="Nama cleaner yang ditemubual">
+    </div>
+    <div class="field">
+      <label>Tarikh audit</label>
+      <div style="font-weight:700; color:var(--ink);" id="cleanerDateDisplay">—</div>
     </div>
   </div>
   <div class="card">
@@ -719,6 +721,7 @@ input,textarea{font-family:inherit;}
     <div class="count" id="scoreCount">0 / 0 item</div>
   </div>
   <button class="submit-btn" id="submitBtn">Hantar audit</button>
+  <button class="ghost-btn" id="saveDraftBtn" style="margin-top:8px;">Simpan Draf (sambung kemudian)</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -738,6 +741,7 @@ const CRITERIA = [
       "Adakah staff faham kepentingan mengisi borang checklist dengan lengkap dan tepat pada masanya?"
     ] },
   { title: "Pengasingan Pesakit: Bilik Isolasi / Isolasi Cohort",
+    hasIsolationType: true,
     items: [
       "Penempatan pesakit diasingkan (bilik isolasi/kohort)",
       "Jarak 1.5m antara katil",
@@ -855,8 +859,8 @@ let subPhotos = CRITERIA.map(c => c.items.map(() => []));
 let remarks = new Array(CRITERIA.length).fill(''); // catatan per kategori (pilihan)
 let followUps = CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
 let openIndex = -1; // accordion: hanya satu kategori terbuka pada satu masa
-let signatureDataUrl = '';
-let organism = '';
+let organisms = []; // boleh pilih lebih dari satu kuman
+let isolationType = null; // 'Isolasi' | 'Cohort' — untuk kategori "Pengasingan Pesakit"
 let likeAppFlag = "Suka";
 let feedbackScore = "";
 
@@ -897,14 +901,32 @@ function applyAuditor(){
 }
 
 $('dateDisplay').textContent = new Date().toLocaleDateString('ms-MY');
+$('cleanerDateDisplay').textContent = new Date().toLocaleDateString('ms-MY');
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
-// Kuman (organism) dropdown
-$('organism').addEventListener('change', () => {
-  organism = $('organism').value;
-  $('organismOtherInput').style.display = organism === 'Lain-lain' ? 'block' : 'none';
-  if (organism === 'Lain-lain') $('organismOtherInput').focus();
+// Kuman (organism) — chip multi-pilih
+$('organismChips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const org = chip.dataset.org;
+  const idx = organisms.indexOf(org);
+  if (idx >= 0){ organisms.splice(idx, 1); chip.classList.remove('active'); }
+  else { organisms.push(org); chip.classList.add('active'); }
+  const showOther = organisms.includes('Lain-lain');
+  $('organismOtherInput').style.display = showOther ? 'block' : 'none';
+  if (showOther) $('organismOtherInput').focus();
 });
+function finalOrganismString(){
+  return organisms.map(o => o === 'Lain-lain'
+    ? ($('organismOtherInput').value.trim() || 'Lain-lain')
+    : o).join(', ');
+}
+function syncOrganismChips(){
+  $('organismChips').querySelectorAll('.chip').forEach(chip => {
+    chip.classList.toggle('active', organisms.includes(chip.dataset.org));
+  });
+  $('organismOtherInput').style.display = organisms.includes('Lain-lain') ? 'block' : 'none';
+}
 
 // ---- OCR: imbas label pesakit (best-effort, guna Tesseract.js — percuma, jalan dalam browser) ----
 function triggerOcrPick(mode){
@@ -1059,6 +1081,14 @@ function renderChecklist(){
         </div>
       </div>
       <div class="accordion-body" style="${isOpen ? '' : 'display:none;'} margin-top:6px;">
+        ${c.hasIsolationType ? `
+        <div class="field" style="margin-bottom:10px;">
+          <label>Jenis Pengasingan</label>
+          <div class="seg" id="isolationTypeSeg">
+            <button type="button" class="plain ${isolationType==='Isolasi'?'active':''}" data-isotype="Isolasi">Isolasi</button>
+            <button type="button" class="plain ${isolationType==='Cohort'?'active':''}" data-isotype="Cohort">Cohort</button>
+          </div>
+        </div>` : ''}
         ${subRows}
         <div class="remark-row">
           <textarea data-i="${i}" class="remark-input" placeholder="Catatan (pilihan, untuk kategori ini)">${remarks[i] || ''}</textarea>
@@ -1080,6 +1110,13 @@ function renderChecklist(){
 }
 
 checklistEl.addEventListener('click', e => {
+  const isoBtn = e.target.closest('#isolationTypeSeg button');
+  if (isoBtn){
+    isolationType = isoBtn.dataset.isotype;
+    isoBtn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    isoBtn.classList.add('active');
+    return;
+  }
   const head = e.target.closest('.accordion-head');
   if (head){
     const i = +head.dataset.i;
@@ -1222,30 +1259,6 @@ function isFollowupComplete(i){
   return fu.comp.every(v => v !== null);
 }
 
-// ---- Tandatangan (signature pad) ----
-const sigCanvas = $('sigPad');
-const sigCtx = sigCanvas.getContext('2d');
-let sigDrawing = false, sigHasContent = false;
-function sigPos(e){
-  const rect = sigCanvas.getBoundingClientRect();
-  const scaleX = sigCanvas.width / rect.width, scaleY = sigCanvas.height / rect.height;
-  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-  return { x: cx * scaleX, y: cy * scaleY };
-}
-function sigStart(e){ sigDrawing = true; sigHasContent = true; const p = sigPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); e.preventDefault(); }
-function sigMove(e){ if (!sigDrawing) return; const p = sigPos(e); sigCtx.lineWidth = 2.4; sigCtx.lineCap = 'round'; sigCtx.strokeStyle = '#241B3A'; sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); e.preventDefault(); }
-function sigEnd(){ sigDrawing = false; }
-sigCanvas.addEventListener('mousedown', sigStart);
-sigCanvas.addEventListener('mousemove', sigMove);
-window.addEventListener('mouseup', sigEnd);
-sigCanvas.addEventListener('touchstart', sigStart, {passive:false});
-sigCanvas.addEventListener('touchmove', sigMove, {passive:false});
-sigCanvas.addEventListener('touchend', sigEnd);
-$('clearSigBtn').addEventListener('click', () => {
-  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-  sigHasContent = false;
-});
 
 // Toggle2 (suka guna borang ini)
 document.querySelectorAll('.toggle2').forEach(group => {
@@ -1317,10 +1330,10 @@ async function saveLog(log){
 }
 
 function computeAuditStatus(){
-  const patientOk = $('patientName').value.trim() && $('patientRN').value.trim() && $('ward').value && $('bed').value.trim() && organism;
+  const patientOk = $('patientName').value.trim() && $('patientRN').value.trim() && $('ward').value && $('bed').value.trim() && organisms.length > 0;
   const allAnswered = subAnswers.every(arr => arr.every(a => a !== null));
   const allFollowUpsDone = CRITERIA.every((c, i) => isFollowupComplete(i));
-  return (patientOk && allAnswered && allFollowUpsDone && sigHasContent) ? 'Lengkap' : 'Draft';
+  return (patientOk && allAnswered && allFollowUpsDone) ? 'Lengkap' : 'Draft';
 }
 
 $('submitBtn').addEventListener('click', async () => {
@@ -1339,7 +1352,7 @@ $('submitBtn').addEventListener('click', async () => {
     return;
   }
 
-  const finalOrganism = organism === 'Lain-lain' ? ($('organismOtherInput').value.trim() || 'Lain-lain') : organism;
+  const finalOrganism = finalOrganismString();
 
   const payload = {
     ward, bed, date, auditor: currentAuditor,
@@ -1349,7 +1362,6 @@ $('submitBtn').addEventListener('click', async () => {
     admissionDate: $('admissionDate').value,
     organism: finalOrganism,
     status,
-    signature: sigHasContent ? sigCanvas.toDataURL('image/png') : '',
     totalCompliant: compliant, totalApplicable: applicable, compliancePercent: pct,
     likeApp: likeAppFlag,
     feedbackScore: feedbackScore,
@@ -1360,6 +1372,7 @@ $('submitBtn').addEventListener('click', async () => {
       remark: remarks[i],
       training: followUps[i].training,
       comp: followUps[i].comp,
+      isolationType: c.hasIsolationType ? isolationType : undefined,
       items: c.items.map((it, j) => ({
         text: itemText(it), answer: subAnswers[i][j], photos: subPhotos[i][j]
       }))
@@ -1383,7 +1396,7 @@ $('submitBtn').addEventListener('click', async () => {
   }
 
   // Simpan salinan ringkas pada peranti (tanpa gambar, supaya storan peranti tak cepat penuh)
-  const payloadLite = {...payload, signature: '', categories: payload.categories.map(c => ({...c, items: c.items.map(it => ({...it, photos: []}))}))};
+  const payloadLite = {...payload, categories: payload.categories.map(c => ({...c, items: c.items.map(it => ({...it, photos: []}))}))};
   const log = await getLog();
   log.unshift({...payloadLite, synced, savedAt: new Date().toISOString()});
   await saveLog(log);
@@ -1400,20 +1413,111 @@ $('submitBtn').addEventListener('click', async () => {
   resetForm();
 });
 
+$('saveDraftBtn').addEventListener('click', async () => {
+  if (!currentAuditor){ showToast('Sila log masuk dahulu.', true); return; }
+  const draft = {
+    auditor: currentAuditor,
+    ward: $('ward').value,
+    bed: $('bed').value,
+    patientName: $('patientName').value,
+    patientIC: $('patientIC').value,
+    patientRN: $('patientRN').value,
+    admissionDate: $('admissionDate').value,
+    organisms,
+    organismOther: $('organismOtherInput').value,
+    subAnswers, subPhotos, remarks, followUps, isolationType,
+    savedAt: new Date().toISOString()
+  };
+  $('saveDraftBtn').disabled = true;
+  try{
+    await window.storage.set('mdro-draft-' + currentAuditor, JSON.stringify(draft), false);
+    showToast('Draf disimpan. Sambung kemudian dari Dashboard.');
+  }catch(e){
+    showToast('Gagal simpan draf pada peranti.', true);
+  }
+  $('saveDraftBtn').disabled = false;
+});
+
+function loadDraftIntoForm(d){
+  currentAuditor = d.auditor || currentAuditor;
+  applyAuditor();
+  $('ward').value = d.ward || '';
+  $('bed').value = d.bed || '';
+  $('patientName').value = d.patientName || '';
+  $('patientIC').value = d.patientIC || '';
+  $('patientRN').value = d.patientRN || '';
+  $('admissionDate').value = d.admissionDate || '';
+  organisms = Array.isArray(d.organisms) ? d.organisms : (d.organism ? [d.organism] : []);
+  $('organismOtherInput').value = d.organismOther || '';
+  syncOrganismChips();
+  subAnswers = d.subAnswers || CRITERIA.map(c => new Array(c.items.length).fill(null));
+  subPhotos = d.subPhotos || CRITERIA.map(c => c.items.map(() => []));
+  remarks = d.remarks || new Array(CRITERIA.length).fill('');
+  followUps = d.followUps || CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
+  isolationType = d.isolationType || null;
+  openIndex = -1;
+  renderChecklist();
+  updateScore();
+}
+
+async function renderLocalDrafts(){
+  const el = $('localDraftList');
+  if (!el) return;
+  el.innerHTML = 'Memuatkan...';
+  try{
+    const list = await window.storage.list('mdro-draft-', false);
+    const keys = (list && list.keys) ? list.keys : [];
+    if (!keys.length){
+      el.innerHTML = '<div class="empty-hist">Tiada draf disimpan pada peranti ini.</div>';
+      return;
+    }
+    const items = [];
+    for (const key of keys){
+      try{
+        const r = await window.storage.get(key, false);
+        if (r && r.value) items.push({key, d: JSON.parse(r.value)});
+      }catch(e){}
+    }
+    el.innerHTML = items.map(({key, d}) => `
+      <div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <div class="finding-q">${escapeHtml(d.auditor || '')} — ${escapeHtml(d.ward || 'Tiada ward')}${d.patientName ? ' · ' + escapeHtml(d.patientName) : ''}</div>
+        <button type="button" class="ghost-btn resume-draft-btn" data-key="${key}" style="padding:6px 12px; font-size:12px; flex-shrink:0;">Sambung</button>
+      </div>`).join('');
+  }catch(e){
+    el.innerHTML = '<div class="empty-hist">Gagal muat draf.</div>';
+  }
+}
+
+$('localDraftList').addEventListener('click', async e => {
+  const btn = e.target.closest('.resume-draft-btn');
+  if (!btn) return;
+  const key = btn.dataset.key;
+  try{
+    const r = await window.storage.get(key, false);
+    if (!r || !r.value) return;
+    const d = JSON.parse(r.value);
+    loadDraftIntoForm(d);
+    await window.storage.delete(key, false);
+    switchTab('entry');
+    showToast('Draf dimuatkan — sila sambung isi.');
+  }catch(e){
+    showToast('Gagal muatkan draf.', true);
+  }
+});
+
 function resetForm(){
   subAnswers = CRITERIA.map(c => new Array(c.items.length).fill(null));
   subPhotos = CRITERIA.map(c => c.items.map(() => []));
   remarks = new Array(CRITERIA.length).fill('');
   followUps = CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
+  isolationType = null;
   openIndex = -1;
   renderChecklist();
   $('improvement').value = ''; $('problems').value = '';
   $('ward').value = ''; $('bed').value = '';
   $('patientName').value = ''; $('patientIC').value = ''; $('patientRN').value = ''; $('admissionDate').value = '';
-  organism = ''; $('organism').value = ''; $('organismOtherInput').style.display = 'none'; $('organismOtherInput').value = '';
+  organisms = []; $('organismOtherInput').value = ''; syncOrganismChips();
   $('ocrStatus').textContent = 'Imbas label pesakit untuk auto-isi Nama/IC/RN/Tarikh Admission (semak semula ketepatan).';
-  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-  sigHasContent = false;
   likeAppFlag = 'Suka'; feedbackScore = '';
   document.querySelectorAll('.toggle2').forEach(g => {
     g.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -1429,7 +1533,7 @@ function switchTab(tab){
   document.getElementById('panel-' + tab).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelector('.scorebar').style.display = (tab === 'dashboard') ? 'none' : 'flex';
-  if (tab === 'dashboard'){ loadDashboard(); loadCleanerDashboard(); }
+  if (tab === 'dashboard'){ loadDashboard(); loadCleanerDashboard(); renderLocalDrafts(); }
 }
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -1973,7 +2077,7 @@ function buildReportWordHtml(records, stats, photoMap){
   <p style="${F}">Sepanjang tempoh audit, sebanyak <b>${records.length}</b> audit telah direkodkan di ${escapeHtml(wardLabel)}, dengan purata keseluruhan pematuhan sebanyak <b>${overallPct === null ? '—' : overallPct + '%'}</b>.</p>
 
   <p style="${F}font-weight:bold; margin-top:16px;">3. Penilaian Aspek Kawalan Infeksi</p>
-  <p style="${F}">Penilaian dijalankan berdasarkan 7 kriteria audit standard unit Kawalan Infeksi merangkumi checklist MDRO, signage, PPE, dan pengurusan sisa klinikal. Dapatan terperinci bagi setiap kriteria adalah seperti dalam jadual di bawah.</p>
+  <p style="${F}">Penilaian dijalankan berdasarkan kriteria audit standard unit Kawalan Infeksi merangkumi checklist MDRO, signage, PPE, dan pengurusan sisa klinikal. Dapatan terperinci bagi setiap kriteria adalah seperti dalam jadual di bawah.</p>
 
   <p style="${F}font-weight:bold; margin-top:16px; text-align:center;">PEMANTAUAN UNIT KAWALAN INFEKSI — PEMATUHAN MDRO</p>
   <table style="border-collapse:collapse; width:100%; ${F}">
@@ -2250,7 +2354,7 @@ initLogin();
 
 (async function initSplash(){
   const minShow = new Promise(resolve => setTimeout(resolve, 900));
-  await Promise.all([loadDashboard(), loadCleanerDashboard(), minShow]);
+  await Promise.all([loadDashboard(), loadCleanerDashboard(), renderLocalDrafts(), minShow]);
   const splash = document.getElementById('splashScreen');
   if (splash) splash.classList.add('hide');
 })();
