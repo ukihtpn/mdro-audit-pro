@@ -698,8 +698,8 @@ input,textarea{font-family:inherit;}
     <div class="field">
       <label>Suka guna borang digital ini?</label>
       <div class="toggle2">
-        <button data-target="likeApp" data-v="Suka" class="active">Suka</button>
-        <button data-target="likeApp" data-v="Tidak Suka" class="yesflag">Tidak Suka</button>
+        <button type="button" data-target="likeApp" data-v="Suka" class="active">Suka</button>
+        <button type="button" data-target="likeApp" data-v="Tidak Suka" class="yesflag">Tidak Suka</button>
       </div>
     </div>
     <div class="field">
@@ -738,6 +738,7 @@ input,textarea{font-family:inherit;}
     <div class="count" id="scoreCount">0 / 0 item</div>
   </div>
   <div class="scorebar-actions">
+    <button class="ghost-btn" id="cancelAuditBtn" title="Batalkan &amp; kosongkan borang">Batal</button>
     <button class="ghost-btn" id="saveDraftBtn">Simpan Draf</button>
     <button class="submit-btn" id="submitBtn">Hantar audit</button>
   </div>
@@ -892,13 +893,36 @@ function categoryAllAnswered(i){ return subAnswers[i].every(a => a !== null); }
 
 const $ = id => document.getElementById(id);
 
+// ---- Storan tempatan (localStorage) ----
+// Nota: app ini dihoskan sebagai laman web biasa, jadi guna localStorage browser.
+const store = {
+  get(key){
+    try{ const v = localStorage.getItem(key); return v === null ? null : v; }
+    catch(e){ return null; }
+  },
+  set(key, value){
+    try{ localStorage.setItem(key, value); return true; }
+    catch(e){ return false; }
+  },
+  remove(key){
+    try{ localStorage.removeItem(key); return true; }
+    catch(e){ return false; }
+  },
+  keys(prefix){
+    const out = [];
+    try{
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (!prefix || (k && k.indexOf(prefix) === 0)) out.push(k);
+      }
+    }catch(e){}
+    return out;
+  }
+};
+
 // ---- Login gate ----
-async function initLogin(){
-  let saved = '';
-  try{
-    const r = await window.storage.get('mdro-auditor', false);
-    if (r && r.value) saved = r.value;
-  }catch(e){ saved = ''; }
+function initLogin(){
+  const saved = store.get('mdro-auditor') || '';
   if (saved){
     currentAuditor = saved;
     applyAuditor();
@@ -907,9 +931,9 @@ async function initLogin(){
   }
 }
 document.querySelectorAll('.login-btn').forEach(btn => {
-  btn.addEventListener('click', async () => {
+  btn.addEventListener('click', () => {
     currentAuditor = btn.dataset.name;
-    try{ await window.storage.set('mdro-auditor', currentAuditor, false); }catch(e){}
+    store.set('mdro-auditor', currentAuditor);
     applyAuditor();
     $('loginGate').classList.remove('show');
   });
@@ -1299,27 +1323,22 @@ function isFollowupComplete(i){
 }
 
 
-// Toggle2 (suka guna borang ini)
-document.querySelectorAll('.toggle2').forEach(group => {
-  group.addEventListener('click', e => {
-    const btn = e.target.closest('button');
-    if (!btn) return;
-    const target = btn.dataset.target;
+// Tab Feedback — guna event delegation pada panel supaya kekal berfungsi
+$('panel-feedback').addEventListener('click', e => {
+  const toggleBtn = e.target.closest('.toggle2 button');
+  if (toggleBtn){
+    const group = toggleBtn.closest('.toggle2');
     group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    if (target === 'likeApp') {
-      likeAppFlag = btn.dataset.v;
-    }
-  });
-});
-
-// Score chips (1-5)
-document.querySelectorAll('.score-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.score-chip').forEach(c => c.classList.remove('active'));
+    toggleBtn.classList.add('active');
+    if (toggleBtn.dataset.target === 'likeApp') likeAppFlag = toggleBtn.dataset.v;
+    return;
+  }
+  const chip = e.target.closest('.score-chip');
+  if (chip){
+    $('panel-feedback').querySelectorAll('.score-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     feedbackScore = chip.dataset.v;
-  });
+  }
 });
 
 function updateScore(){
@@ -1359,13 +1378,12 @@ async function loadSettings(){
 // Local audit log
 async function getLog(){
   try{
-    const r = await window.storage.get('mdro-audit-log', false);
-    return r && r.value ? JSON.parse(r.value) : [];
+    const v = store.get('mdro-audit-log');
+    return v ? JSON.parse(v) : [];
   }catch(e){ return []; }
 }
 async function saveLog(log){
-  try{ await window.storage.set('mdro-audit-log', JSON.stringify(log), false); }
-  catch(e){ /* non-fatal */ }
+  store.set('mdro-audit-log', JSON.stringify(log));
 }
 
 function computeAuditStatus(){
@@ -1447,6 +1465,8 @@ $('submitBtn').addEventListener('click', async () => {
 
   if (synced){
     showToast(status === 'Lengkap' ? 'Audit LENGKAP dihantar ✓' : 'Disimpan sebagai DRAFT — lengkapkan kemudian.');
+    // Draf tempatan hanya dipadam selepas berjaya dihantar
+    if (activeDraftKey){ store.remove(activeDraftKey); activeDraftKey = null; renderLocalDrafts(); }
   } else {
     showToast('Gagal hantar ke Sheet — disimpan pada peranti.', true);
   }
@@ -1454,8 +1474,19 @@ $('submitBtn').addEventListener('click', async () => {
   resetForm();
 });
 
-$('saveDraftBtn').addEventListener('click', async () => {
+$('cancelAuditBtn').addEventListener('click', () => {
+  if (!confirm('Batalkan audit ini? Semua maklumat yang telah diisi akan dipadam dan tidak boleh dikembalikan.')) return;
+  activeDraftKey = null;
+  resetForm();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  showToast('Borang audit dikosongkan.');
+});
+
+let activeDraftKey = null; // draf yang sedang disambung — dipadam hanya selepas audit dihantar
+
+$('saveDraftBtn').addEventListener('click', () => {
   if (!currentAuditor){ showToast('Sila log masuk dahulu.', true); return; }
+  const key = activeDraftKey || ('mdro-draft-' + currentAuditor + '-' + Date.now());
   const draft = {
     auditor: currentAuditor,
     ward: $('ward').value,
@@ -1470,14 +1501,14 @@ $('saveDraftBtn').addEventListener('click', async () => {
     subAnswers, subPhotos, remarks, followUps, isolationType,
     savedAt: new Date().toISOString()
   };
-  $('saveDraftBtn').disabled = true;
-  try{
-    await window.storage.set('mdro-draft-' + currentAuditor, JSON.stringify(draft), false);
+  const ok = store.set(key, JSON.stringify(draft));
+  if (ok){
+    activeDraftKey = key;
     showToast('Draf disimpan. Sambung kemudian dari Dashboard.');
-  }catch(e){
-    showToast('Gagal simpan draf pada peranti.', true);
+    renderLocalDrafts();
+  } else {
+    showToast('Gagal simpan draf (storan peranti penuh?).', true);
   }
-  $('saveDraftBtn').disabled = false;
 });
 
 function loadDraftIntoForm(d){
@@ -1507,45 +1538,61 @@ function loadDraftIntoForm(d){
 async function renderLocalDrafts(){
   const el = $('localDraftList');
   if (!el) return;
-  el.innerHTML = 'Memuatkan...';
-  try{
-    const list = await window.storage.list('mdro-draft-', false);
-    const keys = (list && list.keys) ? list.keys : [];
-    if (!keys.length){
-      el.innerHTML = '<div class="empty-hist">Tiada draf disimpan pada peranti ini.</div>';
-      return;
-    }
-    const items = [];
-    for (const key of keys){
-      try{
-        const r = await window.storage.get(key, false);
-        if (r && r.value) items.push({key, d: JSON.parse(r.value)});
-      }catch(e){}
-    }
-    el.innerHTML = items.map(({key, d}) => `
-      <div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-        <div class="finding-q">${escapeHtml(d.auditor || '')} — ${escapeHtml(d.ward || 'Tiada ward')}${d.patientName ? ' · ' + escapeHtml(d.patientName) : ''}</div>
-        <button type="button" class="ghost-btn resume-draft-btn" data-key="${key}" style="padding:6px 12px; font-size:12px; flex-shrink:0;">Sambung</button>
-      </div>`).join('');
-  }catch(e){
-    el.innerHTML = '<div class="empty-hist">Gagal muat draf.</div>';
+  const keys = store.keys('mdro-draft-');
+  const items = [];
+  keys.forEach(key => {
+    try{
+      const v = store.get(key);
+      if (v) items.push({key, d: JSON.parse(v)});
+    }catch(e){}
+  });
+  // Hanya papar draf milik auditor yang sedang log masuk
+  const mine = items.filter(({d}) => d.auditor === currentAuditor);
+  const othersCount = items.length - mine.length;
+
+  if (!mine.length){
+    el.innerHTML = `<div class="empty-hist">Tiada draf anda pada peranti ini.${othersCount ? ` (${othersCount} draf milik auditor lain disembunyikan)` : ''}</div>`;
+    return;
   }
+  mine.sort((a,b) => (b.d.savedAt || '').localeCompare(a.d.savedAt || ''));
+  el.innerHTML = mine.map(({key, d}) => `
+    <div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <div class="finding-q">${escapeHtml(d.ward || 'Tiada ward')}${d.discipline ? ' (' + escapeHtml(d.discipline) + ')' : ''}${d.patientName ? ' · ' + escapeHtml(d.patientName) : ''}<br><span style="font-size:11px; color:var(--ink-soft);">Disimpan: ${d.savedAt ? new Date(d.savedAt).toLocaleString('ms-MY') : '—'}</span></div>
+      <div style="display:flex; gap:6px; flex-shrink:0;">
+        <button type="button" class="ghost-btn resume-draft-btn" data-key="${key}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0;">Sambung</button>
+        <button type="button" class="ghost-btn delete-draft-btn" data-key="${key}" style="padding:6px 10px; font-size:12px; width:auto; margin-top:0; border-color:var(--red); color:var(--red);">Padam</button>
+      </div>
+    </div>`).join('') + (othersCount ? `<div class="dash-note" style="margin-top:8px;">${othersCount} draf milik auditor lain tidak dipaparkan — hanya auditor yang memulakan audit boleh menyambungnya.</div>` : '');
 }
 
-$('localDraftList').addEventListener('click', async e => {
-  const btn = e.target.closest('.resume-draft-btn');
-  if (!btn) return;
-  const key = btn.dataset.key;
-  try{
-    const r = await window.storage.get(key, false);
-    if (!r || !r.value) return;
-    const d = JSON.parse(r.value);
-    loadDraftIntoForm(d);
-    await window.storage.delete(key, false);
-    switchTab('entry');
-    showToast('Draf dimuatkan — sila sambung isi.');
-  }catch(e){
-    showToast('Gagal muatkan draf.', true);
+$('localDraftList').addEventListener('click', e => {
+  const resumeBtn = e.target.closest('.resume-draft-btn');
+  if (resumeBtn){
+    const key = resumeBtn.dataset.key;
+    try{
+      const v = store.get(key);
+      if (!v){ showToast('Draf tidak dijumpai.', true); return; }
+      const d = JSON.parse(v);
+      if (d.auditor !== currentAuditor){
+        showToast('Hanya auditor yang memulakan audit ini boleh menyambungnya.', true);
+        return;
+      }
+      loadDraftIntoForm(d);
+      activeDraftKey = key; // kekalkan draf sehingga audit berjaya dihantar
+      switchTab('entry');
+      showToast('Draf dimuatkan — sila sambung isi.');
+    }catch(err){
+      showToast('Gagal muatkan draf.', true);
+    }
+    return;
+  }
+  const delBtn = e.target.closest('.delete-draft-btn');
+  if (delBtn){
+    if (!confirm('Padam draf ini? Tindakan ini tidak boleh dibatalkan.')) return;
+    store.remove(delBtn.dataset.key);
+    if (activeDraftKey === delBtn.dataset.key) activeDraftKey = null;
+    renderLocalDrafts();
+    showToast('Draf dipadam.');
   }
 });
 
