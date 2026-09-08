@@ -1204,7 +1204,7 @@ function showModeGate(){
   $('modeGateWho').textContent = 'Log masuk sebagai ' + currentAuditor;
   $('modeGate').classList.add('show');
 }
-document.querySelectorAll('.login-btn').forEach(btn => {
+document.querySelectorAll('#loginGate .login-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     currentAuditor = btn.dataset.name;
     store.set('mdro-auditor', currentAuditor);
@@ -2214,13 +2214,86 @@ function renderComprehensionPanel(records, wardFilter){
   renderQuestionBars(computeComprehensionStats(records, wardFilter), 'compBars', 'compLegend');
 }
 
+let serverDrafts = [];
 function renderDraftPanel(records){
   const drafts = records.filter(r => r.status === 'Draft');
+  serverDrafts = drafts;
   $('draftCount').textContent = drafts.length;
-  $('draftList').innerHTML = drafts.slice(0, 8).map(r =>
-    `<div class="finding-row"><div class="finding-q">${escapeHtml(r.ward||'')} — ${escapeHtml(r.patientName||'Tiada nama')} (${escapeHtml(r.date||'')})</div></div>`
-  ).join('') || '<div class="empty-hist">Tiada audit draft.</div>';
+  $('draftList').innerHTML = drafts.slice(0, 12).map((r, i) => {
+    const mine = r.auditor === currentAuditor;
+    return `<div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <div class="finding-q">
+        ${escapeHtml(r.ward||'')}${r.discipline ? ' (' + escapeHtml(r.discipline) + ')' : ''} — ${escapeHtml(r.patientName || 'Tiada nama')}
+        <br><span style="font-size:11px; color:var(--ink-soft);">Auditor: <b>${escapeHtml(r.auditor || 'Tidak dinyatakan')}</b> · ${escapeHtml(r.date || '')}</span>
+      </div>
+      ${mine
+        ? `<button type="button" class="ghost-btn resume-server-draft" data-i="${i}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0; flex-shrink:0;">Sambung</button>`
+        : `<span class="finding-badge na" style="flex-shrink:0;">Auditor lain</span>`}
+    </div>`;
+  }).join('') || '<div class="empty-hist">Tiada audit draft.</div>';
 }
+
+// Muat semula draf yang telah dihantar ke Sheet (status Draft) ke dalam borang untuk dilengkapkan
+function loadServerDraftIntoForm(r){
+  $('ward').value = r.ward || '';
+  discipline = r.discipline || '';
+  syncDisciplineField();
+  $('bed').value = r.bed || '';
+  $('patientName').value = r.patientName || '';
+  $('patientIC').value = r.patientIC || '';
+  $('patientRN').value = r.patientRN || '';
+  $('admissionDate').value = r.admissionDate || '';
+
+  const known = ['MRSA','CRE','ESBL K.PNEUMONIAE','ESBL E.COLI','MRO','A.BAUMANNII','VRE'];
+  const parts = (r.organism || '').split(',').map(s => s.trim()).filter(Boolean);
+  organisms = []; let other = '';
+  parts.forEach(p => {
+    if (known.includes(p)) organisms.push(p);
+    else { if (!organisms.includes('Lain-lain')) organisms.push('Lain-lain'); other = p; }
+  });
+  $('organismOtherInput').value = other;
+  syncOrganismChips();
+
+  subAnswers = CRITERIA.map(c => new Array(c.items.length).fill(null));
+  subPhotos = CRITERIA.map(c => c.items.map(() => []));
+  remarks = new Array(CRITERIA.length).fill('');
+  followUps = CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
+  isolationType = null;
+
+  (r.categories || []).forEach((cat, ci) => {
+    if (ci >= CRITERIA.length) return;
+    remarks[ci] = cat.remark || '';
+    followUps[ci] = {
+      training: cat.training || null,
+      comp: Array.isArray(cat.comp) ? cat.comp.slice(0,3) : [null,null,null]
+    };
+    if (cat.isolationType) isolationType = cat.isolationType;
+    (cat.items || []).forEach((it, ii) => {
+      if (ii >= CRITERIA[ci].items.length) return;
+      subAnswers[ci][ii] = it.answer || null;
+      subPhotos[ci][ii] = (it.photos || []).slice(); // URL Drive sedia ada dikekalkan
+    });
+  });
+
+  openIndex = -1;
+  renderChecklist();
+  updateScore();
+}
+
+$('draftList').addEventListener('click', e => {
+  const btn = e.target.closest('.resume-server-draft');
+  if (!btn) return;
+  const r = serverDrafts[+btn.dataset.i];
+  if (!r) return;
+  if (r.auditor !== currentAuditor){
+    showToast('Hanya auditor yang memulakan audit ini boleh menyambungnya.', true);
+    return;
+  }
+  loadServerDraftIntoForm(r);
+  activeDraftKey = null;
+  switchTab('entry');
+  showToast('Draf dimuatkan — lengkapkan dan hantar semula.');
+});
 
 async function loadDashboard(){
   $('dashSourceNote').textContent = 'Memuatkan...';
