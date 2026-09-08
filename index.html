@@ -394,11 +394,21 @@ input,textarea{font-family:inherit;}
 
 /* Login gate */
 .login-gate{
-  position:fixed; inset:0; z-index:90; background:linear-gradient(160deg, var(--teal-deep), var(--teal) 65%, #8A6BD9);
-  display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px;
+  position:fixed; top:0; left:0; right:0; bottom:0; z-index:90;
+  background:linear-gradient(160deg, var(--teal-deep), var(--teal) 65%, #8A6BD9);
+  display:none; padding:20px 16px;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
-.login-gate.show{display:flex;}
-.login-card{background:#fff; border-radius:18px; padding:24px 20px; width:100%; max-width:360px; box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.login-gate.show{display:block;}
+.login-card{
+  background:#fff; border-radius:18px; padding:22px 18px;
+  width:100%; max-width:360px; margin:0 auto;
+  box-shadow:0 20px 50px rgba(0,0,0,.3);
+}
+@media (min-height:640px){
+  .login-gate.show{display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .login-card{margin:auto;}
+}
 .login-card h2{margin:0 0 4px; color:var(--teal-deep); font-family:var(--font-display); font-size:18px; text-align:center;}
 .login-card p{margin:0 0 16px; text-align:center; color:var(--ink-soft); font-size:12.5px;}
 .login-btn{
@@ -408,6 +418,11 @@ input,textarea{font-family:inherit;}
 .login-btn:active{background:var(--teal-mist); border-color:var(--teal);}
 .mode-btn{display:flex; align-items:center; gap:12px;}
 .mode-logo{width:44px; height:44px; border-radius:10px; object-fit:cover; flex-shrink:0;}
+@media (max-height:560px){
+  .login-card{padding:16px 14px;}
+  .mode-logo{width:36px; height:36px;}
+  .login-btn{padding:10px 12px; margin-bottom:6px;}
+}
 .mode-text{flex:1; min-width:0; line-height:1.35;}
 </style>
 </head>
@@ -3258,6 +3273,8 @@ function ggUpdateProgress(){
   $('ggProgressNote').textContent = `${done} / ${ggTotalItems()} permukaan dinilai`;
 }
 
+let ggOpenIndex = 0; // accordion: satu bahagian pada satu masa
+
 function renderGgChecklist(){
   const el = $('ggChecklist');
   let lastPart = '';
@@ -3267,7 +3284,12 @@ function renderGgChecklist(){
       lastPart = sec.part;
       head = `<div style="margin-top:16px; padding:8px 10px; background:var(--teal-mist); border-radius:8px; font-weight:800; font-size:12.5px; color:var(--teal-deep); letter-spacing:.03em;">${sec.part}</div>`;
     }
-    const rows = sec.items.map((item, ii) => `
+    const isOpen = ggOpenIndex === si;
+    const answered = ggAnswers[si].filter(a => a !== null).length;
+    const cleanCount = ggAnswers[si].filter(a => a === 'clean').length;
+    const total = sec.items.length;
+
+    const rows = isOpen ? sec.items.map((item, ii) => `
       <div class="sub-item" style="padding:10px 0; border-top:1px solid var(--line);">
         <div class="qtext" style="font-size:13px; margin-bottom:8px;">${escapeHtml(item)}</div>
         <div class="seg">
@@ -3279,14 +3301,32 @@ function renderGgChecklist(){
         <div class="remark-row">
           <textarea data-si="${si}" data-ii="${ii}" class="gg-remark-input" placeholder="Remarks (pilihan)">${ggRemarks[si][ii] || ''}</textarea>
         </div>
-      </div>`).join('');
-    return `${head}<div style="margin-top:10px;"><div style="font-weight:700; font-size:13px; color:var(--ink);">${escapeHtml(sec.group)}</div>${rows}</div>`;
+      </div>`).join('') + (si < GG_SECTIONS.length - 1
+        ? `<button type="button" class="ghost-btn gg-next-btn" data-si="${si}" style="margin-top:12px;">Seterusnya: ${escapeHtml(GG_SECTIONS[si+1].group)} &rarr;</button>`
+        : `<div class="dash-note" style="margin-top:12px;">Bahagian terakhir — sila hantar atau simpan draf di bawah.</div>`)
+      : '';
+
+    return `${head}
+      <div class="audit-item accordion-item">
+        <div class="accordion-head gg-acc-head" data-si="${si}" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <div class="qtext" style="margin-bottom:0; font-weight:700;">${escapeHtml(sec.group)}</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <span class="finding-badge ${answered === total ? (cleanCount === total ? 'ok' : 'bad') : ''}" style="${answered ? '' : 'display:none;'}">${answered}/${total}</span>
+            <span style="font-size:12px; color:var(--ink-soft);">${isOpen ? '&#9650;' : '&#9660;'}</span>
+          </div>
+        </div>
+        <div class="accordion-body" style="${isOpen ? '' : 'display:none;'}">${rows}</div>
+      </div>`;
   }).join('');
-  GG_SECTIONS.forEach((sec, si) => sec.items.forEach((it, ii) => {
-    const seg = el.querySelectorAll(`[data-si="${si}"][data-ii="${ii}"]`);
-    seg.forEach(b => { if (b.dataset.v && b.dataset.v === ggAnswers[si][ii]) b.classList.add('active'); });
-    renderGgPhotoRow(si, ii);
-  }));
+
+  if (ggOpenIndex >= 0){
+    GG_SECTIONS[ggOpenIndex].items.forEach((it, ii) => {
+      el.querySelectorAll(`[data-si="${ggOpenIndex}"][data-ii="${ii}"]`).forEach(b => {
+        if (b.dataset.v && b.dataset.v === ggAnswers[ggOpenIndex][ii]) b.classList.add('active');
+      });
+      renderGgPhotoRow(ggOpenIndex, ii);
+    });
+  }
   ggUpdateProgress();
 }
 
@@ -3312,6 +3352,21 @@ function renderGgPhotoRow(si, ii){
 }
 
 $('ggChecklist').addEventListener('click', e => {
+  const accHead = e.target.closest('.gg-acc-head');
+  if (accHead){
+    const si = +accHead.dataset.si;
+    ggOpenIndex = (ggOpenIndex === si) ? -1 : si;
+    renderGgChecklist();
+    return;
+  }
+  const nextBtn = e.target.closest('.gg-next-btn');
+  if (nextBtn){
+    ggOpenIndex = +nextBtn.dataset.si + 1;
+    renderGgChecklist();
+    const el = $('ggChecklist').querySelectorAll('.accordion-item')[ggOpenIndex];
+    if (el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
   const addBtn = e.target.closest('.gg-photo-add');
   if (addBtn){
     const si = +addBtn.dataset.si, ii = +addBtn.dataset.ii;
@@ -3360,6 +3415,7 @@ function ggResetForm(){
   $('ggComments').value = ''; $('ggVerifiedBy').value = '';
   $('ggDateApplied').value = todayISO();
   $('ggDateEvaluated').value = todayISO();
+  ggOpenIndex = 0;
   renderGgChecklist();
 }
 
@@ -4042,10 +4098,17 @@ function envItemStats(sections){
   return {yes, applicable};
 }
 
+let envOpenIndex = 0; // accordion: satu bahagian pada satu masa
+
 function renderEnvChecklist(){
   const el = $('envChecklist');
   el.innerHTML = ENV_SECTIONS.map((sec, si) => {
-    const rows = sec.items.map((item, ii) => `
+    const isOpen = envOpenIndex === si;
+    const answered = envAnswers[si].filter(a => a !== null).length;
+    const yesCount = envAnswers[si].filter(a => a === 'yes').length;
+    const total = sec.items.length;
+
+    const rows = isOpen ? sec.items.map((item, ii) => `
       <div class="sub-item" style="padding:10px 0; border-top:1px solid var(--line);">
         <div class="qtext" style="font-size:13px; margin-bottom:8px;">${escapeHtml(item)}</div>
         <div class="seg">
@@ -4057,15 +4120,31 @@ function renderEnvChecklist(){
         <div class="remark-row">
           <textarea data-si="${si}" data-ii="${ii}" class="env-remark-input" placeholder="Remarks (pilihan)">${envRemarks[si][ii] || ''}</textarea>
         </div>
-      </div>`).join('');
-    return `<div style="margin-top:14px;"><div style="padding:8px 10px; background:var(--teal-mist); border-radius:8px; font-weight:800; font-size:12.5px; color:var(--teal-deep);">${escapeHtml(sec.group)}</div>${rows}</div>`;
+      </div>`).join('') + (si < ENV_SECTIONS.length - 1
+        ? `<button type="button" class="ghost-btn env-next-btn" data-si="${si}" style="margin-top:12px;">Seterusnya: ${escapeHtml(ENV_SECTIONS[si+1].group)} &rarr;</button>`
+        : `<div class="dash-note" style="margin-top:12px;">Bahagian terakhir — sila hantar atau simpan draf di bawah.</div>`)
+      : '';
+
+    return `<div class="audit-item accordion-item">
+        <div class="accordion-head env-acc-head" data-si="${si}" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <div class="qtext" style="margin-bottom:0; font-weight:700;">${escapeHtml(sec.group)}</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <span class="finding-badge ${answered === total ? (yesCount === total ? 'ok' : 'bad') : ''}" style="${answered ? '' : 'display:none;'}">${answered}/${total}</span>
+            <span style="font-size:12px; color:var(--ink-soft);">${isOpen ? '&#9650;' : '&#9660;'}</span>
+          </div>
+        </div>
+        <div class="accordion-body" style="${isOpen ? '' : 'display:none;'}">${rows}</div>
+      </div>`;
   }).join('');
-  ENV_SECTIONS.forEach((sec, si) => sec.items.forEach((it, ii) => {
-    el.querySelectorAll(`[data-si="${si}"][data-ii="${ii}"]`).forEach(b => {
-      if (b.dataset.v && b.dataset.v === envAnswers[si][ii]) b.classList.add('active');
+
+  if (envOpenIndex >= 0){
+    ENV_SECTIONS[envOpenIndex].items.forEach((it, ii) => {
+      el.querySelectorAll(`[data-si="${envOpenIndex}"][data-ii="${ii}"]`).forEach(b => {
+        if (b.dataset.v && b.dataset.v === envAnswers[envOpenIndex][ii]) b.classList.add('active');
+      });
+      renderEnvPhotoRow(envOpenIndex, ii);
     });
-    renderEnvPhotoRow(si, ii);
-  }));
+  }
   envUpdateProgress();
 }
 
@@ -4091,6 +4170,21 @@ function renderEnvPhotoRow(si, ii){
 }
 
 $('envChecklist').addEventListener('click', e => {
+  const accHead = e.target.closest('.env-acc-head');
+  if (accHead){
+    const si = +accHead.dataset.si;
+    envOpenIndex = (envOpenIndex === si) ? -1 : si;
+    renderEnvChecklist();
+    return;
+  }
+  const nextBtn = e.target.closest('.env-next-btn');
+  if (nextBtn){
+    envOpenIndex = +nextBtn.dataset.si + 1;
+    renderEnvChecklist();
+    const el = $('envChecklist').querySelectorAll('.accordion-item')[envOpenIndex];
+    if (el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
   const addBtn = e.target.closest('.env-photo-add');
   if (addBtn){
     const si = +addBtn.dataset.si, ii = +addBtn.dataset.ii;
@@ -4136,6 +4230,7 @@ function envResetForm(){
   $('envDepartment').value = ''; $('envWard').value = ''; $('envBed').value = '';
   $('envComments').value = ''; $('envVerifiedBy').value = '';
   $('envDate').value = todayISO();
+  envOpenIndex = 0;
   renderEnvChecklist();
 }
 
@@ -4653,6 +4748,76 @@ $('envFeedbackSubmitBtn').addEventListener('click', async () => {
   btn.disabled = false; btn.textContent = 'Hantar Maklum Balas';
 });
 
+
+// ---- Perlindungan kerja belum disimpan ----
+// Amaran sebelum keluar/refresh, dan auto-simpan draf supaya kerja tidak hilang.
+function hasUnsavedWork(){
+  if (auditMode === 'mdro'){
+    return subAnswers.some(arr => arr.some(a => a !== null))
+        || !!$('patientName').value.trim() || !!$('ward').value;
+  }
+  if (auditMode === 'glogerm'){
+    return ggAnswers.some(arr => arr.some(a => a !== null))
+        || !!$('ggWard').value || !!$('ggDepartment').value.trim();
+  }
+  if (auditMode === 'env'){
+    return envAnswers.some(arr => arr.some(a => a !== null))
+        || !!$('envWard').value || !!$('envDepartment').value.trim();
+  }
+  return false;
+}
+
+// Simpan draf secara senyap (tanpa toast) — dipanggil bila halaman ditutup/disembunyikan
+function autoSaveDraft(){
+  if (!currentAuditor || !hasUnsavedWork()) return;
+  try{
+    if (auditMode === 'mdro'){
+      const key = activeDraftKey || ('mdro-draft-' + currentAuditor + '-' + Date.now());
+      store.set(key, JSON.stringify({
+        auditor: currentAuditor, ward: $('ward').value, discipline, bed: $('bed').value,
+        patientName: $('patientName').value, patientIC: $('patientIC').value,
+        patientRN: $('patientRN').value, admissionDate: $('admissionDate').value,
+        organisms, organismOther: $('organismOtherInput').value,
+        subAnswers, subPhotos, remarks, followUps, isolationType,
+        savedAt: new Date().toISOString(), auto: true
+      }));
+      activeDraftKey = key;
+    } else if (auditMode === 'glogerm'){
+      const key = ggActiveDraftKey || ('gg-draft-' + currentAuditor + '-' + Date.now());
+      store.set(key, JSON.stringify({
+        auditor: currentAuditor, department: $('ggDepartment').value, ward: $('ggWard').value,
+        bed: $('ggBed').value, dateApplied: $('ggDateApplied').value,
+        dateEvaluated: $('ggDateEvaluated').value, comments: $('ggComments').value,
+        verifiedBy: $('ggVerifiedBy').value, ggAnswers, ggPhotos, ggRemarks,
+        savedAt: new Date().toISOString(), auto: true
+      }));
+      ggActiveDraftKey = key;
+    } else if (auditMode === 'env'){
+      const key = envActiveDraftKey || ('env-draft-' + currentAuditor + '-' + Date.now());
+      store.set(key, JSON.stringify({
+        auditor: currentAuditor, department: $('envDepartment').value, ward: $('envWard').value,
+        bed: $('envBed').value, date: $('envDate').value, comments: $('envComments').value,
+        verifiedBy: $('envVerifiedBy').value, envAnswers, envPhotos, envRemarks,
+        savedAt: new Date().toISOString(), auto: true
+      }));
+      envActiveDraftKey = key;
+    }
+  }catch(e){ /* storan penuh — abaikan */ }
+}
+
+window.addEventListener('beforeunload', e => {
+  if (!hasUnsavedWork()) return;
+  autoSaveDraft();               // simpan dahulu supaya kerja tidak hilang
+  e.preventDefault();
+  e.returnValue = '';            // browser papar amaran standardnya sendiri
+  return '';
+});
+
+// Simpan juga bila app dipindah ke latar belakang (tab ditukar / app ditutup di telefon)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') autoSaveDraft();
+});
+window.addEventListener('pagehide', autoSaveDraft);
 
 // ---- Pilihan mod audit ----
 let auditMode = '';
