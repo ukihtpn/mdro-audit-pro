@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#402A87">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -68,7 +68,8 @@ body.env-mode .login-gate{
 }
 
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{margin:0; padding:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); }
+img,svg,canvas{max-width:100%;}
+html,body{margin:0; padding:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); max-width:100%; overflow-x:hidden;}
 body{padding-bottom:110px;}
 
 button{font-family:inherit; cursor:pointer;}
@@ -118,9 +119,15 @@ input,textarea{font-family:inherit;}
 .topbar-right{display:flex; align-items:center; gap:10px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;}
 
 /* Tab bar */
-.tabbar{display:flex; gap:6px; margin-top:12px;}
+.tabbar{
+  display:flex; gap:6px; margin-top:12px;
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none; padding-bottom:2px;
+}
+.tabbar::-webkit-scrollbar{display:none;}
 .tabbar button{
-  flex:1; padding:9px 4px; border-radius:9px; border:1px solid rgba(255,255,255,.22);
+  flex:0 0 auto; min-width:0; white-space:nowrap;
+  padding:9px 14px; border-radius:9px; border:1px solid rgba(255,255,255,.22);
   background:rgba(255,255,255,.06); color:rgba(255,255,255,.7); font-size:12.5px; font-weight:700;
 }
 .tabbar button.active{background:#fff; color:var(--teal-deep); border-color:#fff;}
@@ -151,9 +158,9 @@ input,textarea{font-family:inherit;}
 .ghost-btn:active{background:var(--teal-mist);}
 
 /* Sections */
-.wrap{padding:16px; max-width:680px; margin:0 auto;}
+.wrap{padding:16px; max-width:680px; margin:0 auto; width:100%;}
 .topbar-inner{max-width:680px; margin:0 auto;}
-.card{
+.card{max-width:100%; 
   background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
   padding:16px; margin-bottom:14px;
 }
@@ -222,7 +229,7 @@ input,textarea{font-family:inherit;}
 }
 
 /* Vertical column chart for per-question compliance */
-.qcol-chart{display:flex; align-items:flex-end; gap:10px; padding:10px 2px 0; overflow-x:auto;}
+.qcol-chart{display:flex; align-items:flex-end; gap:10px; padding:10px 2px 0; overflow-x:auto; max-width:100%; -webkit-overflow-scrolling:touch;}
 .qcol{display:flex; flex-direction:column; align-items:center; flex:1; min-width:34px;}
 .qcol-track{width:100%; max-width:38px; height:140px; display:flex; align-items:flex-end; background:var(--paper); border-radius:8px; overflow:hidden;}
 .qcol-bar{width:100%; border-radius:8px 8px 0 0; background:var(--teal); transition:height .3s ease; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
@@ -400,6 +407,8 @@ input,textarea{font-family:inherit;}
   overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
 .login-gate.show{display:block;}
+.login-gate{overscroll-behavior:contain;}
+body.gate-open{overflow:hidden;}
 .login-card{
   background:#fff; border-radius:18px; padding:22px 18px;
   width:100%; max-width:360px; margin:0 auto;
@@ -1448,17 +1457,36 @@ const store = {
 };
 
 // ---- Login gate ----
+const VALID_AUDITORS = ['Dr Aneesa','Dr Saihah','Dr Zaila','ICN Maria','ICN Mariam','ICN Rosena'];
+
 function initLogin(){
   const saved = store.get('mdro-auditor') || '';
-  if (saved){
+  // Terima hanya nama auditor yang sah — elak nilai rosak seperti "undefined"
+  if (VALID_AUDITORS.indexOf(saved) >= 0){
     currentAuditor = saved;
     applyAuditor();
     showModeGate();
   } else {
+    store.remove('mdro-auditor');
+    currentAuditor = '';
     $('loginGate').classList.add('show');
   }
 }
+// Kunci skrol halaman belakang selagi mana-mana skrin penuh terbuka
+function syncGateLock(){
+  const open = $('loginGate').classList.contains('show') || $('modeGate').classList.contains('show');
+  document.body.classList.toggle('gate-open', open);
+}
+const gateObserver = new MutationObserver(syncGateLock);
+gateObserver.observe($('loginGate'), {attributes:true, attributeFilter:['class']});
+gateObserver.observe($('modeGate'), {attributes:true, attributeFilter:['class']});
+
 function showModeGate(){
+  if (!currentAuditor){
+    $('modeGate').classList.remove('show');
+    $('loginGate').classList.add('show');
+    return;
+  }
   $('modeGateWho').textContent = 'Log masuk sebagai ' + currentAuditor;
   $('modeGate').classList.add('show');
 }
@@ -2191,6 +2219,11 @@ function switchTab(tab){
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + tab).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  // Pastikan tab aktif kelihatan dalam bar yang boleh diskrol
+  const activeBtn = document.querySelector('.tab-btn.active');
+  if (activeBtn && activeBtn.scrollIntoView){
+    try{ activeBtn.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'}); }catch(e){}
+  }
   document.querySelector('.scorebar').style.display = (tab === 'entry') ? 'flex' : 'none';
   if (tab === 'dashboard'){ loadDashboard(); loadCleanerDashboard(); loadSharedDrafts().then(renderLocalDrafts); }
   if (tab === 'ggdash'){ loadGgDashboard(); loadSharedDrafts().then(renderGgDrafts); }
