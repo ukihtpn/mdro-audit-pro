@@ -876,6 +876,13 @@ body.gate-open{overflow:hidden;}
 
   <div class="tab-panel" id="panel-glogerm">
     <div class="card">
+      <h2>Edit audit yang telah dihantar</h2>
+      <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
+      <input type="text" id="ggEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
+      <div id="ggEditList" style="margin-top:8px;"></div>
+    </div>
+    <div class="dash-note" id="ggEditBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
+    <div class="card">
       <h2><span class="num">1</span>Butiran Audit</h2>
       <div class="field">
         <label>Auditor</label>
@@ -1105,6 +1112,13 @@ body.gate-open{overflow:hidden;}
   </div>
 
   <div class="tab-panel" id="panel-env">
+    <div class="card">
+      <h2>Edit audit yang telah dihantar</h2>
+      <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
+      <input type="text" id="envEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
+      <div id="envEditList" style="margin-top:8px;"></div>
+    </div>
+    <div class="dash-note" id="envEditBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
     <div class="card">
       <h2><span class="num">1</span>Butiran Audit</h2>
       <div class="field">
@@ -3670,6 +3684,7 @@ function ggResetForm(){
   ggRemarks = GG_SECTIONS.map(s => new Array(s.items.length).fill(''));
   ggApplied = GG_SECTIONS.map(s => s.items.map(() => false));
   ggPhase = 'apply';
+  ggEditingId = null; if ($('ggEditBanner')) $('ggEditBanner').style.display = 'none';
   $('ggDepartment').value = ''; $('ggWard').value = ''; $('ggBed').value = '';
   $('ggComments').value = ''; $('ggVerifiedBy').value = '';
   $('ggDateApplied').value = todayISO();
@@ -3679,6 +3694,46 @@ function ggResetForm(){
 }
 
 let ggActiveDraftKey = null;
+let ggEditingId = null;
+function ggRenderEditList(){
+  const el = $('ggEditList'); if (!el) return;
+  const q = ($('ggEditSearch').value || '').toLowerCase();
+  const recs = ggRecords.filter(r => r.id).filter(r => !q || [r.ward, r.bed, r.date, r.auditor, r.department].join(' ').toLowerCase().includes(q))
+    .sort((a,b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
+  el.innerHTML = recs.length ? recs.map(r => `<div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+    <div class="finding-q">${escapeHtml(r.ward||'')}${r.bed ? ' · ' + escapeHtml(r.bed) : ''} — ${escapeHtml(r.department||'')}<br><span style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.date||'')} · ${escapeHtml(r.auditor||'')} · ${escapeHtml(String(r.cleanPercent))}%</span></div>
+    <button type="button" class="ghost-btn gg-edit-sent-btn" data-id="${escapeHtml(r.id)}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0;">Edit</button></div>`).join('')
+    : '<div class="empty-hist">Tiada audit dijumpai.</div>';
+}
+document.addEventListener('input', e => { if (e.target && e.target.id === 'ggEditSearch') ggRenderEditList(); });
+document.addEventListener('click', e => {
+  const b = e.target.closest('.gg-edit-sent-btn'); if (!b) return;
+  const r = ggRecords.find(x => String(x.id) === b.dataset.id); if (!r) return;
+  ggResetForm();
+  $('ggDepartment').value = r.department || '';
+  $('ggWard').value = r.ward || '';
+  $('ggBed').value = r.bed || '';
+  $('ggDateApplied').value = r.dateApplied || todayISO();
+  $('ggDateEvaluated').value = r.date || todayISO();
+  $('ggComments').value = r.comments || '';
+  $('ggVerifiedBy').value = r.verifiedBy || '';
+  (r.sections || []).forEach(sec => {
+    const si = GG_SECTIONS.findIndex(g => g.group === sec.group); if (si < 0) return;
+    (sec.items || []).forEach(it => {
+      const ii = GG_SECTIONS[si].items.indexOf(it.text); if (ii < 0) return;
+      ggApplied[si][ii] = true;
+      ggAnswers[si][ii] = it.answer || null;
+      ggRemarks[si][ii] = it.remark || '';
+      ggPhotos[si][ii] = (it.photos || []).slice();
+    });
+  });
+  ggPhase = 'assess'; ggOpenIndex = 0;
+  ggEditingId = r.id; ggActiveDraftKey = null;
+  $('ggEditBanner').style.display = 'block';
+  renderGgChecklist();
+  showToast('Mod edit — ubah dan tekan Hantar untuk kemas kini.');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+});
 
 $('ggSaveDraftBtn').addEventListener('click', async () => {
   if (!currentAuditor){ showToast('Sila log masuk dahulu.', true); return; }
@@ -3777,6 +3832,7 @@ $('ggSubmitBtn').addEventListener('click', async () => {
 
   const payload = {
     formType: 'glogerm_audit',
+    editId: ggEditingId || undefined,
     auditor: currentAuditor,
     department: $('ggDepartment').value.trim(),
     ward: $('ggWard').value,
@@ -3801,6 +3857,7 @@ $('ggSubmitBtn').addEventListener('click', async () => {
   try{
     await fetch(scriptUrl, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
     showToast(`Audit Glo Germ dihantar ✓ (${pct}% bersih)`);
+    if (ggEditingId) setTimeout(loadGgDashboard, 1500);
     if (ggActiveDraftKey){ await deleteSharedDraft(ggActiveDraftKey); ggActiveDraftKey = null; await loadSharedDrafts(); renderGgDrafts(); }
     ggResetForm();
   }catch(e){
@@ -3831,11 +3888,12 @@ async function loadGgDashboard(){
       if (json && Array.isArray(json.records)) records = json.records;
     }catch(e){ records = []; }
   }
-  records = records.map(r => ({...r, date: normDate(r.date), dateApplied: normDate(r.dateApplied)}));
+  records = records.map(r => ({...r, date: normDate(r.date) || normDate(r.id), dateApplied: normDate(r.dateApplied)}));
   ggRecords = records;
   $('ggDashNote').textContent = records.length ? '' : 'Tiada data Glo Germ lagi';
   if (ggPeriodMode !== 'all') ggRefreshPeriodOptions('ggPeriodValueSelect', ggPeriodMode, v => ggPeriodValue = v);
   ggApplyDashboard();
+  ggRenderEditList();
 }
 
 function ggRenderWardChart(records){
@@ -4497,7 +4555,46 @@ $('envChecklist').addEventListener('input', e => {
   envRemarks[+ta.dataset.si][+ta.dataset.ii] = ta.value;
 });
 
+let envEditingId = null;
+function envRenderEditList(){
+  const el = $('envEditList'); if (!el) return;
+  const q = ($('envEditSearch').value || '').toLowerCase();
+  const recs = envRecords.filter(r => r.id).filter(r => !q || [r.ward, r.bed, r.date, r.auditor, r.department].join(' ').toLowerCase().includes(q))
+    .sort((a,b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
+  el.innerHTML = recs.length ? recs.map(r => `<div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+    <div class="finding-q">${escapeHtml(r.ward||'')}${r.bed ? ' · ' + escapeHtml(r.bed) : ''} — ${escapeHtml(r.department||'')}<br><span style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.date||'')} · ${escapeHtml(r.auditor||'')} · ${escapeHtml(String(r.compliancePercent))}%</span></div>
+    <button type="button" class="ghost-btn env-edit-sent-btn" data-id="${escapeHtml(r.id)}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0;">Edit</button></div>`).join('')
+    : '<div class="empty-hist">Tiada audit dijumpai.</div>';
+}
+document.addEventListener('input', e => { if (e.target && e.target.id === 'envEditSearch') envRenderEditList(); });
+document.addEventListener('click', e => {
+  const b = e.target.closest('.env-edit-sent-btn'); if (!b) return;
+  const r = envRecords.find(x => String(x.id) === b.dataset.id); if (!r) return;
+  envResetForm();
+  $('envDepartment').value = r.department || '';
+  $('envWard').value = r.ward || '';
+  $('envBed').value = r.bed || '';
+  $('envDate').value = r.date || todayISO();
+  $('envComments').value = r.comments || '';
+  $('envVerifiedBy').value = r.verifiedBy || '';
+  (r.sections || []).forEach(sec => {
+    const si = ENV_SECTIONS.findIndex(g => g.group === sec.group); if (si < 0) return;
+    (sec.items || []).forEach(it => {
+      const ii = ENV_SECTIONS[si].items.indexOf(it.text); if (ii < 0) return;
+      envAnswers[si][ii] = it.answer || null;
+      envRemarks[si][ii] = it.remark || '';
+      envPhotos[si][ii] = (it.photos || []).slice();
+    });
+  });
+  envEditingId = r.id; envActiveDraftKey = null; envOpenIndex = 0;
+  $('envEditBanner').style.display = 'block';
+  renderEnvChecklist();
+  showToast('Mod edit — ubah dan tekan Hantar untuk kemas kini.');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+});
+
 function envResetForm(){
+  envEditingId = null; if ($('envEditBanner')) $('envEditBanner').style.display = 'none';
   envAnswers = ENV_SECTIONS.map(s => new Array(s.items.length).fill(null));
   envPhotos = ENV_SECTIONS.map(s => s.items.map(() => []));
   envRemarks = ENV_SECTIONS.map(s => new Array(s.items.length).fill(''));
@@ -4597,6 +4694,7 @@ $('envSubmitBtn').addEventListener('click', async () => {
 
   const payload = {
     formType: 'env_audit',
+    editId: envEditingId || undefined,
     auditor: currentAuditor,
     department: $('envDepartment').value.trim(),
     ward: $('envWard').value,
@@ -4618,6 +4716,7 @@ $('envSubmitBtn').addEventListener('click', async () => {
   try{
     await fetch(scriptUrl, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
     showToast(`Audit dihantar ✓ (${pct}% pematuhan)`);
+    if (envEditingId) setTimeout(loadEnvDashboard, 1500);
     if (envActiveDraftKey){ await deleteSharedDraft(envActiveDraftKey); envActiveDraftKey = null; await loadSharedDrafts(); renderEnvDrafts(); }
     envResetForm();
   }catch(e){
@@ -4687,11 +4786,12 @@ async function loadEnvDashboard(){
       if (json && Array.isArray(json.records)) records = json.records;
     }catch(e){ records = []; }
   }
-  records = records.map(r => ({...r, date: normDate(r.date)}));
+  records = records.map(r => ({...r, date: normDate(r.date) || normDate(r.id)}));
   envRecords = records;
   $('envDashNote').textContent = records.length ? '' : 'Tiada data lagi';
   if (envPeriodMode !== 'all') envRefreshPeriodOptions('envPeriodValueSelect', envPeriodMode, v => envPeriodValue = v);
   envApplyDashboard();
+  envRenderEditList();
 }
 
 function envApplyDashboard(){
