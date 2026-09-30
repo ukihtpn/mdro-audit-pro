@@ -300,7 +300,8 @@ input,textarea{font-family:inherit;}
   *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;}
   .topbar, .tabbar{display:none !important;}
   .tab-panel{display:none !important;}
-  #panel-report.print-active{display:block !important;}
+  #panel-report.print-active, #panel-ggreport.print-active, #panel-envreport.print-active{display:block !important;}
+  .finding-photo{max-width:220px; page-break-inside:avoid;}
   .no-print{display:none !important;}
   .app{padding-top:6px;}
 }
@@ -649,6 +650,13 @@ body.gate-open{overflow:hidden;}
 
   <div class="tab-panel" id="panel-entry">
   <div class="card">
+    <h2>Edit audit yang telah dihantar</h2>
+    <div class="dash-note">Pilih audit sedia ada, ubah maklumat/jawapan/gambar, kemudian tekan "Hantar audit" — rekod asal akan dikemas kini (tiada rekod berganda).</div>
+    <input type="text" id="editSearch" placeholder="Cari ward / bed / nama / tarikh" style="margin-top:8px; width:100%;">
+    <div id="editList" style="margin-top:8px;"></div>
+  </div>
+  <div class="dash-note" id="editBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
+  <div class="card">
     <h2><span class="num">1</span>Auditor</h2>
     <div class="field">
       <div class="auditor-display" id="auditorDisplay" style="font-weight:800; color:var(--teal-deep); font-size:15px;">—</div>
@@ -684,7 +692,7 @@ body.gate-open{overflow:hidden;}
     </div>
     <div class="field">
       <label>Tarikh audit</label>
-      <div style="font-weight:700; color:var(--ink);" id="dateDisplay">—</div>
+      <input type="date" id="auditDate">
     </div>
 
     <div class="field" style="margin-top:14px;">
@@ -766,7 +774,7 @@ body.gate-open{overflow:hidden;}
     </div>
     <div class="field">
       <label>Tarikh audit</label>
-      <div style="font-weight:700; color:var(--ink);" id="cleanerDateDisplay">—</div>
+      <input type="date" id="cleanerDate">
     </div>
   </div>
   <div class="card">
@@ -990,6 +998,11 @@ body.gate-open{overflow:hidden;}
       <h2>Permukaan Paling Kerap Tidak Bersih</h2>
       <div id="ggTopFailures"></div>
     </div>
+    <div class="card">
+      <h2>Senarai Item Dinilai (ikut bahagian)</h2>
+      <div class="dash-note">Tekan G1–G6 untuk lihat item yang dinilai, ward/bed/tarikh, keputusan dan lokasi dicalit.</div>
+      <div id="ggItemDetail"></div>
+    </div>
   </div>
 
   <div class="tab-panel" id="panel-ggreport">
@@ -1037,6 +1050,7 @@ body.gate-open{overflow:hidden;}
             <div class="stat-label">Audit direkod</div>
           </div>
         </div>
+        <button class="ghost-btn no-print" id="ggPrintReportBtn">Cetak / Simpan PDF (gambar penuh)</button>
         <button class="ghost-btn no-print" id="ggDownloadWordBtn">Muat turun Word (.doc)</button>
       </div>
       <div class="card">
@@ -1465,6 +1479,7 @@ let discipline = ''; // Surgical / Ortho — hanya untuk wad multidisiplin (W4, 
 const MULTIDISCIPLINE_WARDS = ['W4','W7'];
 let isolationType = null; // 'Isolasi' | 'Cohort' — untuk kategori "Pengasingan Pesakit"
 let likeAppFlag = "Suka";
+let editingId = null; // id (Timestamp) rekod yang sedang diedit
 let feedbackScore = "";
 
 function itemText(it){ return typeof it === 'string' ? it : it.text; }
@@ -1551,9 +1566,19 @@ function applyAuditor(){
   $('auditorRow').style.display = 'flex';
 }
 
-$('dateDisplay').textContent = new Date().toLocaleDateString('ms-MY');
-$('cleanerDateDisplay').textContent = new Date().toLocaleDateString('ms-MY');
-function todayISO(){ return new Date().toISOString().slice(0,10); }
+$('auditDate').value = todayISO();
+$('cleanerDate').value = todayISO();
+function todayISO(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+// Seragamkan format tarikh (yyyy-MM-dd) supaya tapisan bulan/minggu tidak rosak
+function normDate(v){
+  if (!v) return '';
+  const t = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0,10);
+  let m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
+  const d = new Date(t);
+  return isNaN(d.getTime()) ? '' : d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 
 // Kuman (organism) — chip multi-pilih
 // Ward — papar pilihan disiplin hanya untuk wad multidisiplin (W4, W7)
@@ -2000,7 +2025,7 @@ function computeAuditStatus(){
 $('submitBtn').addEventListener('click', async () => {
   const ward = $('ward').value.trim();
   const bed = $('bed').value.trim();
-  const date = todayISO();
+  const date = $('auditDate').value || todayISO();
   const {compliant, applicable, pct} = updateScore();
   const status = computeAuditStatus();
 
@@ -2050,7 +2075,7 @@ $('submitBtn').addEventListener('click', async () => {
         method: 'POST',
         mode: 'no-cors',
         headers: {'Content-Type': 'text/plain'},
-        body: JSON.stringify({ formType: 'mdro_audit', ...payload })
+        body: JSON.stringify({ formType: 'mdro_audit', editId: editingId || undefined, ...payload })
       });
       synced = true;
     }catch(e){ synced = false; }
@@ -2065,6 +2090,7 @@ $('submitBtn').addEventListener('click', async () => {
   $('submitBtn').disabled = false;
   $('submitBtn').textContent = 'Hantar audit';
 
+  if (synced && editingId){ setTimeout(loadDashboard, 1500); }
   if (synced){
     showToast(status === 'Lengkap' ? 'Audit LENGKAP dihantar ✓' : 'Disimpan sebagai DRAFT — lengkapkan kemudian.');
     // Draf tempatan hanya dipadam selepas berjaya dihantar
@@ -2165,7 +2191,7 @@ $('saveDraftBtn').addEventListener('click', async () => {
   const btn = $('saveDraftBtn');
   btn.disabled = true; btn.textContent = 'Menyimpan...';
   const payload = {
-    ward: $('ward').value, discipline, bed: $('bed').value,
+    auditDate: $('auditDate').value, ward: $('ward').value, discipline, bed: $('bed').value,
     patientName: $('patientName').value, patientIC: $('patientIC').value,
     patientRN: $('patientRN').value, admissionDate: $('admissionDate').value,
     organisms, organismOther: $('organismOtherInput').value,
@@ -2188,7 +2214,7 @@ function loadDraftIntoForm(d){
   $('ward').value = d.ward || '';
   discipline = d.discipline || '';
   syncDisciplineField();
-  $('bed').value = d.bed || '';
+  $('bed').value = d.bed || ''; $('auditDate').value = d.auditDate || todayISO();
   $('patientName').value = d.patientName || '';
   $('patientIC').value = d.patientIC || '';
   $('patientRN').value = d.patientRN || '';
@@ -2243,7 +2269,7 @@ function resetForm(){
   openIndex = -1;
   renderChecklist();
   $('improvement').value = ''; $('problems').value = '';
-  $('ward').value = ''; $('bed').value = ''; discipline = ''; syncDisciplineField();
+  $('ward').value = ''; $('bed').value = ''; $('auditDate').value = todayISO(); editingId = null; if ($('editBanner')) $('editBanner').style.display = 'none'; discipline = ''; syncDisciplineField();
   $('patientName').value = ''; $('patientIC').value = ''; $('patientRN').value = ''; $('admissionDate').value = '';
   organisms = []; $('organismOtherInput').value = ''; syncOrganismChips();
   $('ocrStatus').textContent = 'Imbas label pesakit untuk auto-isi Nama/IC/RN/Tarikh Admission (semak semula ketepatan).';
@@ -2608,7 +2634,7 @@ function loadServerDraftIntoForm(r){
   $('ward').value = r.ward || '';
   discipline = r.discipline || '';
   syncDisciplineField();
-  $('bed').value = r.bed || '';
+  $('bed').value = r.bed || ''; $('auditDate').value = r.date || todayISO();
   $('patientName').value = r.patientName || '';
   $('patientIC').value = r.patientIC || '';
   $('patientRN').value = r.patientRN || '';
@@ -2656,6 +2682,7 @@ $('draftList').addEventListener('click', async e => {
     const r = serverDrafts[+btn.dataset.i];
     if (!r) return;
     loadServerDraftIntoForm(r);
+    editingId = r.id; if ($('editBanner')) $('editBanner').style.display = 'block';
     activeDraftKey = null;
     switchTab('entry');
     showToast(r.auditor && r.auditor !== currentAuditor
@@ -2683,6 +2710,28 @@ $('draftList').addEventListener('click', async e => {
   }
 });
 
+function renderEditList(){
+  const el = $('editList'); if (!el) return;
+  const q = ($('editSearch').value || '').toLowerCase();
+  const recs = lastRecords.filter(r => r.id && r.status !== 'Draft')
+    .filter(r => !q || [r.ward, r.bed, r.patientName, r.date, r.auditor].join(' ').toLowerCase().includes(q))
+    .sort((a,b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
+  el.innerHTML = recs.length ? recs.map(r => `<div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+    <div class="finding-q">${escapeHtml(r.ward||'')} · ${escapeHtml(r.bed||'')} — ${escapeHtml(r.patientName||'')}<br><span style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.date||'')} · ${escapeHtml(r.auditor||'')} · ${escapeHtml(String(r.compliancePercent))}%</span></div>
+    <button type="button" class="ghost-btn edit-sent-btn" data-id="${escapeHtml(r.id)}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0;">Edit</button></div>`).join('')
+    : '<div class="empty-hist">Tiada audit dijumpai.</div>';
+}
+document.addEventListener('input', e => { if (e.target && e.target.id === 'editSearch') renderEditList(); });
+document.addEventListener('click', e => {
+  const b = e.target.closest('.edit-sent-btn'); if (!b) return;
+  const r = lastRecords.find(x => String(x.id) === b.dataset.id); if (!r) return;
+  loadServerDraftIntoForm(r);
+  editingId = r.id; activeDraftKey = null;
+  $('editBanner').style.display = 'block';
+  showToast('Mod edit — ubah dan tekan Hantar audit untuk kemas kini.');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+});
+
 async function loadDashboard(){
   $('dashSourceNote').textContent = 'Memuatkan...';
   let records = [];
@@ -2707,9 +2756,11 @@ async function loadDashboard(){
   $('dashSourceNote').textContent = liveOk
     ? 'Data langsung dari Google Sheet (semua auditor)'
     : 'Data dari peranti ini sahaja — semak sambungan internet dan cuba lagi';
+  records = records.map(r => ({...r, date: normDate(r.date)}));
   lastRecords = records;
   if (periodMode !== 'all') refreshPeriodOptions();
   applyDashboardFilters();
+  renderEditList();
 }
 
 // ---- Tab Laporan ----
@@ -2763,6 +2814,7 @@ $('reportPeriodModeSeg').addEventListener('click', e => {
     wrap.style.display = 'block';
     $('reportPeriodValueLabel').textContent = reportPeriodMode === 'month' ? 'Pilih bulan' : 'Pilih minggu epid';
     refreshReportPeriodOptions();
+    if (!lastRecords.length) loadDashboard().then(refreshReportPeriodOptions);
   }
 });
 $('reportPeriodValueSelect').addEventListener('change', () => {
@@ -3360,7 +3412,7 @@ $('cleanerSubmitBtn').addEventListener('click', async () => {
   if (!currentAuditor){ showToast('Sila log masuk dahulu.', true); return; }
   const payload = {
     formType: 'cleaner_check',
-    ward, date: todayISO(), auditor: currentAuditor,
+    ward, date: $('cleanerDate').value || todayISO(), auditor: currentAuditor,
     cleanerName: $('cleanerName').value.trim(),
     items: CLEANER_ITEMS.map((item, k) => ({
       text: item.text, ref: item.ref, answer: cleanerAnswers[k], remark: cleanerRemarks[k], photos: cleanerPhotos[k]
@@ -3781,6 +3833,7 @@ async function loadGgDashboard(){
       if (json && Array.isArray(json.records)) records = json.records;
     }catch(e){ records = []; }
   }
+  records = records.map(r => ({...r, date: normDate(r.date), dateApplied: normDate(r.dateApplied)}));
   ggRecords = records;
   $('ggDashNote').textContent = records.length ? '' : 'Tiada data Glo Germ lagi';
   if (ggPeriodMode !== 'all') ggRefreshPeriodOptions('ggPeriodValueSelect', ggPeriodMode, v => ggPeriodValue = v);
@@ -3813,8 +3866,8 @@ function ggRenderSectionChart(records){
       if (v === 'clean' || v === 'notclean'){ g[key].applicable++; if (v === 'clean') g[key].clean++; }
     });
   }));
-  const stats = Object.keys(g).map((k, i) => ({
-    shortLabel: 'G' + (i+1), label: k,
+  const stats = Object.keys(g).sort((a,b) => GG_SECTIONS.findIndex(x => x.group === a) - GG_SECTIONS.findIndex(x => x.group === b)).map((k, i) => ({
+    shortLabel: 'G' + (GG_SECTIONS.findIndex(x => x.group === k) + 1), label: k,
     pct: g[k].applicable ? Math.round(g[k].clean / g[k].applicable * 100) : null,
     applicable: g[k].applicable
   }));
@@ -3919,6 +3972,28 @@ function ggApplyDashboard(){
   ggRenderWardChart(recs);
   ggRenderSectionChart(recs);
   ggRenderTopFailures(recs);
+  ggRenderDetail(recs);
+}
+
+function ggRenderDetail(records){
+  const el = $('ggItemDetail'); if (!el) return;
+  el.innerHTML = GG_SECTIONS.map((sec, si) => {
+    const rows = {};
+    records.forEach(r => (r.sections || []).forEach(s => {
+      if (s.group !== sec.group) return;
+      (s.items || []).forEach(it => {
+        const v = (it.answer || '').toString().toLowerCase();
+        if (v !== 'clean' && v !== 'notclean') return;
+        (rows[it.text] = rows[it.text] || []).push({r, it, v});
+      });
+    }));
+    const names = Object.keys(rows);
+    const n = names.reduce((a, k) => a + rows[k].length, 0);
+    return `<details style="margin-top:8px;"><summary style="cursor:pointer; font-weight:700;">G${si+1}. ${escapeHtml(sec.group)} — ${n} item dinilai</summary>` +
+      (names.length ? names.map(k => `<div class="finding-row" style="padding-left:10px;"><div class="finding-q"><b>${escapeHtml(k)}</b></div>` +
+        rows[k].map(x => `<div class="dash-note" style="margin:2px 0;">${escapeHtml(x.r.ward||'')}${x.r.bed ? ' · ' + escapeHtml(x.r.bed) : ''} · ${escapeHtml(x.r.date||'')} <span class="finding-badge ${x.v === 'clean' ? 'ok' : 'bad'}">${x.v === 'clean' ? 'Bersih' : 'Tidak Bersih'}</span>${x.it.remark ? ' — dicalit di: ' + escapeHtml(x.it.remark) : ''}</div>`).join('') + `</div>`).join('')
+        : '<div class="empty-hist">Tiada item dinilai.</div>') + `</details>`;
+  }).join('');
 }
 
 // Bahagian tanggungjawab: Cleaner vs HCW (Nurses / Allied Health)
@@ -4030,8 +4105,8 @@ function ggSectionStats(records){
       if (v === 'clean' || v === 'notclean'){ g[key].applicable++; if (v === 'clean') g[key].clean++; }
     });
   }));
-  return Object.keys(g).map((k, i) => ({
-    shortLabel: 'G' + (i+1), label: k, part: g[k].part,
+  return Object.keys(g).sort((a,b) => GG_SECTIONS.findIndex(x => x.group === a) - GG_SECTIONS.findIndex(x => x.group === b)).map((k, i) => ({
+    shortLabel: 'G' + (GG_SECTIONS.findIndex(x => x.group === k) + 1), label: k, part: g[k].part,
     pct: g[k].applicable ? Math.round(g[k].clean / g[k].applicable * 100) : null,
     applicable: g[k].applicable
   }));
@@ -4069,12 +4144,12 @@ $('ggGenerateReportBtn').addEventListener('click', async () => {
     const st = ggItemStats(r.sections);
     const rpct = st.applicable ? Math.round(st.clean / st.applicable * 100) : null;
     const rows = (r.sections || []).map(sec => {
-      const items = (sec.items || []).filter(it => (it.answer || '').toLowerCase() === 'notclean');
+      const items = (sec.items || []);
       if (!items.length) return '';
       return `<div style="margin-top:6px;"><div class="finding-q" style="font-weight:700;">${escapeHtml(sec.group || '')}</div>` +
         items.map(it => `<div class="finding-row" style="padding-left:10px;">
-          <div class="finding-q">${escapeHtml(it.text || '')} <span class="finding-badge bad">Tidak Bersih</span></div>
-          ${it.remark ? `<div class="finding-remark">${escapeHtml(it.remark)}</div>` : ''}
+          <div class="finding-q">${escapeHtml(it.text || '')} <span class="finding-badge ${(it.answer||'').toLowerCase() === 'clean' ? 'ok' : (it.answer||'').toLowerCase() === 'notclean' ? 'bad' : 'na'}">${(it.answer||'').toLowerCase() === 'clean' ? 'Bersih' : (it.answer||'').toLowerCase() === 'notclean' ? 'Tidak Bersih' : 'N/A'}</span></div>
+          ${it.remark ? `<div class="finding-remark">Dicalit di: ${escapeHtml(it.remark)}</div>` : ''}
           ${(it.photos || []).map(p => `<a href="${p}" target="_blank" rel="noopener"><img class="finding-photo" src="${p}" loading="lazy"></a>`).join('')}
         </div>`).join('') + `</div>`;
     }).join('');
@@ -4093,6 +4168,13 @@ $('ggGenerateReportBtn').addEventListener('click', async () => {
 
   $('ggReportOutput').style.display = 'block';
   btn.disabled = false; btn.textContent = 'Jana Laporan';
+});
+
+$('ggPrintReportBtn').addEventListener('click', () => {
+  const panel = document.getElementById('panel-ggreport');
+  panel.classList.add('print-active');
+  window.print();
+  setTimeout(() => panel.classList.remove('print-active'), 500);
 });
 
 $('ggDownloadWordBtn').addEventListener('click', async () => {
@@ -4157,7 +4239,7 @@ $('ggDownloadWordBtn').addEventListener('click', async () => {
     </tr>`).join('')}
   </table>
 
-  <p style="${H}">5. Butiran Dapatan (Permukaan Tidak Bersih)</p>`;
+  <p style="${H}">5. Butiran Dapatan (Semua Permukaan Dicalit &amp; Keputusan)</p>`;
 
   if (!recs.length){
     html += `<p style="${F}">Tiada audit untuk tempoh/ward dipilih.</p>`;
@@ -4170,9 +4252,9 @@ $('ggDownloadWordBtn').addEventListener('click', async () => {
     let any = false;
     (r.sections || []).forEach(sec => {
       (sec.items || []).forEach(it => {
-        if ((it.answer || '').toLowerCase() !== 'notclean') return;
         any = true;
-        html += `<p style="margin:4px 0;">• <b>${escapeHtml(sec.group || '')}</b> — ${escapeHtml(it.text || '')}${it.remark ? `<br><i>${escapeHtml(it.remark)}</i>` : ''}</p>`;
+        const ans = (it.answer || '').toLowerCase();
+        html += `<p style="margin:4px 0;">• <b>${escapeHtml(sec.group || '')}</b> — ${escapeHtml(it.text || '')} — <b>${ans === 'clean' ? 'BERSIH' : ans === 'notclean' ? 'TIDAK BERSIH' : 'N/A'}</b>${it.remark ? `<br><i>Dicalit di: ${escapeHtml(it.remark)}</i>` : ''}</p>`;
         (it.photos || []).forEach(url => {
           const fid = extractDriveFileId(url);
           const emb = fid && photoMap[fid] ? photoMap[fid] : '';
@@ -4607,6 +4689,7 @@ async function loadEnvDashboard(){
       if (json && Array.isArray(json.records)) records = json.records;
     }catch(e){ records = []; }
   }
+  records = records.map(r => ({...r, date: normDate(r.date)}));
   envRecords = records;
   $('envDashNote').textContent = records.length ? '' : 'Tiada data lagi';
   if (envPeriodMode !== 'all') envRefreshPeriodOptions('envPeriodValueSelect', envPeriodMode, v => envPeriodValue = v);
@@ -4954,7 +5037,7 @@ function autoSaveDraft(){
       activeDraftKey = activeDraftKey || newDraftId();
       saveSharedDraft('mdro', activeDraftKey, $('ward').value,
         [$('bed').value, $('patientName').value].filter(Boolean).join(' · '), {
-          ward: $('ward').value, discipline, bed: $('bed').value,
+          auditDate: $('auditDate').value, ward: $('ward').value, discipline, bed: $('bed').value,
           patientName: $('patientName').value, patientIC: $('patientIC').value,
           patientRN: $('patientRN').value, admissionDate: $('admissionDate').value,
           organisms, organismOther: $('organismOtherInput').value,
