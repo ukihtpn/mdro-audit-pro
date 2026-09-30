@@ -2517,7 +2517,7 @@ function refreshPeriodOptions(){
   const select = $('periodValueSelect');
   select.innerHTML = '';
   if (periodMode === 'month'){
-    const months = Array.from(new Set(lastRecords.filter(r => r.date).map(r => r.date.slice(0,7)))).sort().reverse();
+    const months = Array.from(new Set(lastRecords.filter(r => r.date).map(r => r.date.slice(0,7)).filter(m => /^\d{4}-\d{2}$/.test(m)))).sort().reverse();
     months.forEach(m => {
       const [y, mo] = m.split('-');
       const opt = document.createElement('option');
@@ -2754,7 +2754,7 @@ async function loadDashboard(){
   $('dashSourceNote').textContent = liveOk
     ? 'Data langsung dari Google Sheet (semua auditor)'
     : 'Data dari peranti ini sahaja — semak sambungan internet dan cuba lagi';
-  records = records.map(r => ({...r, date: normDate(r.date)}));
+  records = records.map(r => ({...r, date: normDate(r.date) || normDate(r.id)}));
   lastRecords = records;
   if (periodMode !== 'all') refreshPeriodOptions();
   applyDashboardFilters();
@@ -2773,7 +2773,7 @@ function refreshReportPeriodOptions(){
   const select = $('reportPeriodValueSelect');
   select.innerHTML = '';
   if (reportPeriodMode === 'month'){
-    const months = Array.from(new Set(lastRecords.filter(r => r.date).map(r => r.date.slice(0,7)))).sort().reverse();
+    const months = Array.from(new Set(lastRecords.filter(r => r.date).map(r => r.date.slice(0,7)).filter(m => /^\d{4}-\d{2}$/.test(m)))).sort().reverse();
     months.forEach(m => {
       const [y, mo] = m.split('-');
       const opt = document.createElement('option');
@@ -3920,7 +3920,7 @@ function ggFilteredRecords(){
 function ggRefreshPeriodOptions(selectId, mode, setValue){
   const select = $(selectId);
   select.innerHTML = '';
-  const keys = Array.from(new Set(ggRecords.map(r => ggPeriodKeyOf(r, mode)).filter(Boolean))).sort().reverse();
+  const keys = Array.from(new Set(ggRecords.map(r => ggPeriodKeyOf(r, mode)).filter(k => mode !== 'month' || /^\d{4}-\d{2}$/.test(k)))).sort().reverse();
   keys.forEach(k => {
     const opt = document.createElement('option');
     opt.value = k;
@@ -4640,7 +4640,7 @@ function envPeriodKeyOf(r, mode){
 function envRefreshPeriodOptions(selectId, mode, setValue){
   const select = $(selectId);
   select.innerHTML = '';
-  const keys = Array.from(new Set(envRecords.map(r => envPeriodKeyOf(r, mode)).filter(Boolean))).sort().reverse();
+  const keys = Array.from(new Set(envRecords.map(r => envPeriodKeyOf(r, mode)).filter(k => mode !== 'month' || /^\d{4}-\d{2}$/.test(k)))).sort().reverse();
   keys.forEach(k => {
     const opt = document.createElement('option');
     opt.value = k;
