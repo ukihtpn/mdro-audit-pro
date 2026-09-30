@@ -451,10 +451,8 @@ body.gate-open{overflow:hidden;}
   width:100%; max-width:360px; margin:0 auto;
   box-shadow:0 20px 50px rgba(0,0,0,.3);
 }
-@media (min-height:640px){
-  .login-gate.show{display:flex; flex-direction:column; align-items:center; justify-content:center;}
-  .login-card{margin:auto;}
-}
+.login-gate.show{display:flex; flex-direction:column; align-items:center;}
+.login-card{margin:auto;} /* margin:auto = tengah menegak & mendatar; jika kandungan panjang, ia boleh discroll */
 .login-card h2{margin:0 0 4px; color:var(--teal-deep); font-family:var(--font-display); font-size:18px; text-align:center;}
 .login-card p{margin:0 0 16px; text-align:center; color:var(--ink-soft); font-size:12.5px;}
 .login-btn{
@@ -4149,7 +4147,7 @@ $('ggGenerateReportBtn').addEventListener('click', async () => {
       return `<div style="margin-top:6px;"><div class="finding-q" style="font-weight:700;">${escapeHtml(sec.group || '')}</div>` +
         items.map(it => `<div class="finding-row" style="padding-left:10px;">
           <div class="finding-q">${escapeHtml(it.text || '')} <span class="finding-badge ${(it.answer||'').toLowerCase() === 'clean' ? 'ok' : (it.answer||'').toLowerCase() === 'notclean' ? 'bad' : 'na'}">${(it.answer||'').toLowerCase() === 'clean' ? 'Bersih' : (it.answer||'').toLowerCase() === 'notclean' ? 'Tidak Bersih' : 'N/A'}</span></div>
-          ${it.remark ? `<div class="finding-remark">Dicalit di: ${escapeHtml(it.remark)}</div>` : ''}
+          <div class="finding-remark"><b>Dicalit di:</b> ${it.remark ? escapeHtml(it.remark) : '<i>(lokasi tidak dicatat)</i>'}</div>
           ${(it.photos || []).map(p => `<a href="${p}" target="_blank" rel="noopener"><img class="finding-photo" src="${p}" loading="lazy"></a>`).join('')}
         </div>`).join('') + `</div>`;
     }).join('');
@@ -4254,7 +4252,7 @@ $('ggDownloadWordBtn').addEventListener('click', async () => {
       (sec.items || []).forEach(it => {
         any = true;
         const ans = (it.answer || '').toLowerCase();
-        html += `<p style="margin:4px 0;">• <b>${escapeHtml(sec.group || '')}</b> — ${escapeHtml(it.text || '')} — <b>${ans === 'clean' ? 'BERSIH' : ans === 'notclean' ? 'TIDAK BERSIH' : 'N/A'}</b>${it.remark ? `<br><i>Dicalit di: ${escapeHtml(it.remark)}</i>` : ''}</p>`;
+        html += `<p style="margin:4px 0;">• <b>${escapeHtml(sec.group || '')}</b> — ${escapeHtml(it.text || '')} — <b>${ans === 'clean' ? 'BERSIH' : ans === 'notclean' ? 'TIDAK BERSIH' : 'N/A'}</b><br><i>Dicalit di: ${it.remark ? escapeHtml(it.remark) : '(lokasi tidak dicatat)'}</i></p>`;
         (it.photos || []).forEach(url => {
           const fid = extractDriveFileId(url);
           const emb = fid && photoMap[fid] ? photoMap[fid] : '';
