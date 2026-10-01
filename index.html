@@ -468,6 +468,7 @@ body.gate-open{overflow:hidden;}
   .login-btn{padding:10px 12px; margin-bottom:6px;}
 }
 .mode-text{flex:1; min-width:0; line-height:1.35;}
+.search-input{padding:10px 12px; border:1.5px solid var(--line, #d9d4ea); border-radius:10px; font:inherit; background:#fff; box-sizing:border-box;}
 </style>
 </head>
 <body>
@@ -628,6 +629,25 @@ body.gate-open{overflow:hidden;}
       <div class="qcol-chart" id="cleanerWardBars"></div>
       <div class="q-legend" id="cleanerWardLegend"></div>
     </div>
+    <div class="card">
+      <h2>Ask Cleaner — Pematuhan mengikut Bulan</h2>
+      <div class="qcol-chart" id="cleanerMonthBars"></div>
+      <div class="q-legend" id="cleanerMonthLegend"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-entry">
+  <div class="seg" id="mdroViewSeg" style="margin-bottom:12px;">
+    <button type="button" class="plain active" data-entryview="new">Entry Baharu</button>
+    <button type="button" class="plain" data-entryview="list">Senarai Entry</button>
+  </div>
+  <div id="mdroFormWrap">
+  <div class="dash-note" id="editBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
+  <div class="card">
+    <h2><span class="num">1</span>Auditor</h2>
+    <div class="field">
+      <div class="auditor-display" id="auditorDisplay" style="font-weight:800; color:var(--teal-deep); font-size:15px;">—</div>
+    </div>
   </div>
 
   <div class="card">
@@ -717,6 +737,37 @@ body.gate-open{overflow:hidden;}
     <div id="checklist"></div>
   </div>
   </div>
+  <div id="mdroListWrap" style="display:none;">
+    <div class="card">
+      <h2>Senarai Entry</h2>
+      <div class="seg" id="mdroListSeg">
+        <button type="button" class="plain active" data-view="done">Lengkap</button>
+        <button type="button" class="plain" data-view="pending">Pending</button>
+      </div>
+    </div>
+    <div id="mdroListDone">
+  <div class="card">
+    <h2>Edit audit yang telah dihantar</h2>
+    <div class="dash-note">Pilih audit sedia ada, ubah maklumat/jawapan/gambar, kemudian tekan "Hantar audit" — rekod asal akan dikemas kini (tiada rekod berganda).</div>
+    <input type="text" class="search-input" id="editSearch" placeholder="Cari ward / bed / nama / tarikh" style="margin-top:8px; width:100%;">
+    <div id="editList" style="margin-top:8px;"></div>
+  </div>
+    </div>
+    <div id="mdroListPending" style="display:none;">
+    <div class="card">
+      <h2>Audit belum lengkap (Draft)</h2>
+      <div class="stat-big" id="draftCount" style="color:var(--amber);">—</div>
+      <div class="stat-label">audit perlu dilengkapkan (interview staf / tandatangan)</div>
+      <div id="draftList" style="margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
+      <div class="dash-note">Draf tersimpan dalam Google Sheet. Mana-mana auditor boleh tekan "Sambung" untuk teruskan.</div>
+      <div id="localDraftList" style="margin-top:10px;">Memuatkan...</div>
+    </div>
+    </div>
+  </div>
+  </div>
 
   <div class="tab-panel" id="panel-cleaner">
   <div class="card">
@@ -749,56 +800,6 @@ body.gate-open{overflow:hidden;}
     <div class="dash-note" style="margin-bottom:10px;">Rujukan: CDC — Best Practices for Environmental Cleaning in Healthcare Facilities; NJDOH — Targeted MDRO Prevention Strategies Checklist.</div>
     <div id="cleanerChecklist"></div>
     <button class="submit-btn" id="cleanerSubmitBtn" style="margin-top:14px;">Hantar</button>
-  </div>
-  </div>
-
-  <div class="tab-panel" id="panel-entry">
-  <div class="seg" id="mdroViewSeg" style="margin-bottom:12px;">
-    <button type="button" class="plain active" data-entryview="new">Entry Baharu</button>
-    <button type="button" class="plain" data-entryview="list">Senarai Entry</button>
-  </div>
-  <div id="mdroFormWrap">
-  <div class="card">
-    <h2>Edit audit yang telah dihantar</h2>
-    <div class="dash-note">Pilih audit sedia ada, ubah maklumat/jawapan/gambar, kemudian tekan "Hantar audit" — rekod asal akan dikemas kini (tiada rekod berganda).</div>
-    <input type="text" id="editSearch" placeholder="Cari ward / bed / nama / tarikh" style="margin-top:8px; width:100%;">
-    <div id="editList" style="margin-top:8px;"></div>
-  </div>
-  <div class="dash-note" id="editBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
-  <div class="card">
-    <h2><span class="num">1</span>Auditor</h2>
-    <div class="field">
-      <div class="auditor-display" id="auditorDisplay" style="font-weight:800; color:var(--teal-deep); font-size:15px;">—</div>
-    </div>
-    </div>
-    <div id="listPending" style="display:none;">
-    <div class="card">
-      <h2>Audit belum lengkap (Draft)</h2>
-      <div class="stat-big" id="draftCount" style="color:var(--amber);">—</div>
-      <div class="stat-label">audit perlu dilengkapkan (interview staf / tandatangan)</div>
-      <div id="draftList" style="margin-top:10px;"></div>
-    </div>
-    <div class="card">
-      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
-      <div class="dash-note">Draf tersimpan dalam Google Sheet. Mana-mana auditor boleh tekan "Sambung" untuk teruskan.</div>
-      <div id="localDraftList" style="margin-top:10px;">Memuatkan...</div>
-    </div>
-    </div>
-  </div>
-  <div id="mdroListWrap" style="display:none;">
-    <div class="card">
-      <h2>Senarai Entry</h2>
-      <div class="seg" id="listSeg">
-        <button type="button" class="plain active" data-view="done">Lengkap</button>
-        <button type="button" class="plain" data-view="pending">Pending</button>
-      </div>
-    </div>
-    <div id="listDone">
-    <div class="card">
-      <h2>Ask Cleaner — Pematuhan mengikut Bulan</h2>
-      <div class="qcol-chart" id="cleanerMonthBars"></div>
-      <div class="q-legend" id="cleanerMonthLegend"></div>
-    </div>
   </div>
   </div>
 
@@ -962,20 +963,20 @@ body.gate-open{overflow:hidden;}
   <div id="ggListWrap" style="display:none;">
     <div class="card">
       <h2>Senarai Entry</h2>
-      <div class="seg" id="gglistSeg">
+      <div class="seg" id="ggListSeg">
         <button type="button" class="plain active" data-view="done">Lengkap</button>
         <button type="button" class="plain" data-view="pending">Pending</button>
       </div>
     </div>
-    <div id="gglistDone">
+    <div id="ggListDone">
     <div class="card">
       <h2>Edit audit yang telah dihantar</h2>
       <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
-      <input type="text" id="ggEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
+      <input type="text" class="search-input" id="ggEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
       <div id="ggEditList" style="margin-top:8px;"></div>
     </div>
     </div>
-    <div id="gglistPending" style="display:none;">
+    <div id="ggListPending" style="display:none;">
     <div class="card">
       <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
       <div class="dash-note">Draf tersimpan dalam Google Sheet. Mana-mana auditor boleh tekan "Sambung" untuk teruskan.</div>
@@ -1212,20 +1213,20 @@ body.gate-open{overflow:hidden;}
   <div id="envListWrap" style="display:none;">
     <div class="card">
       <h2>Senarai Entry</h2>
-      <div class="seg" id="envlistSeg">
+      <div class="seg" id="envListSeg">
         <button type="button" class="plain active" data-view="done">Lengkap</button>
         <button type="button" class="plain" data-view="pending">Pending</button>
       </div>
     </div>
-    <div id="envlistDone">
+    <div id="envListDone">
     <div class="card">
       <h2>Edit audit yang telah dihantar</h2>
       <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
-      <input type="text" id="envEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
+      <input type="text" class="search-input" id="envEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
       <div id="envEditList" style="margin-top:8px;"></div>
     </div>
     </div>
-    <div id="envlistPending" style="display:none;">
+    <div id="envListPending" style="display:none;">
     <div class="card">
       <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
       <div id="envDraftList" style="margin-top:10px;">Memuatkan...</div>
@@ -2365,21 +2366,18 @@ function switchTab(tab){
   if (tab === 'dashboard'){ loadDashboard(); loadCleanerDashboard(); loadSharedDrafts().then(renderLocalDrafts); }
   if (tab === 'ggdash'){ loadGgDashboard(); loadSharedDrafts().then(renderGgDrafts); }
   if (tab === 'envdash'){ loadEnvDashboard(); loadSharedDrafts().then(renderEnvDrafts); }
-  if (tab === 'list'){ loadDashboard(); loadSharedDrafts().then(renderLocalDrafts); }
-  if (tab === 'gglist'){ loadGgDashboard(); loadSharedDrafts().then(renderGgDrafts); }
-  if (tab === 'envlist'){ loadEnvDashboard(); loadSharedDrafts().then(renderEnvDrafts); }
 }
-// Togol Lengkap / Pending dalam tab Senarai Audit
-['list','gglist','envlist'].forEach(pid => {
-  const seg = document.getElementById(pid + 'Seg'); if (!seg) return;
+const LIST_LIMIT = {mdro:15, gg:15, env:15};
+// Togol Lengkap / Pending dalam Senarai Entry
+['mdro','gg','env'].forEach(pref => {
+  const seg = document.getElementById(pref + 'ListSeg'); if (!seg) return;
   seg.addEventListener('click', e => {
     const b = e.target.closest('button[data-view]'); if (!b) return;
     seg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
-    document.getElementById(pid + 'Done').style.display = (b.dataset.view === 'done') ? '' : 'none';
-    document.getElementById(pid + 'Pending').style.display = (b.dataset.view === 'pending') ? '' : 'none';
+    document.getElementById(pref + 'ListDone').style.display = (b.dataset.view === 'done') ? '' : 'none';
+    document.getElementById(pref + 'ListPending').style.display = (b.dataset.view === 'pending') ? '' : 'none';
   });
 });
-const LIST_LIMIT = {mdro:15, gg:15, env:15};
 // Togol dalam tab New Entry: [Entry Baharu | Senarai Entry]
 function setEntryView(pref, view){
   const seg = document.getElementById(pref + 'ViewSeg'); if (!seg) return;
@@ -3208,6 +3206,11 @@ function buildReportWordHtml(records, stats, photoMap){
     <tr><td style="${TH}">Staf pernah menghadiri kursus berkaitan</td><td style="${TD}">${knowledge.trainPct === null ? '—' : knowledge.trainPct + '% (' + knowledge.trainTotal + ' staf ditemubual)'}</td></tr>
   </table>`;
 
+  // Graf pematuhan mengikut kategori (Q1..Q9)
+  html += `<p style="${H}">Graf: Peratus Pematuhan Mengikut Kategori</p>` + wordChartHtml(
+    stats.map((st, i) => ({label: 'Q' + (i+1), pct: st.pct, desc: st.label + ' — ' + st.applicable + ' item dinilai'})),
+    'Pematuhan mengikut kategori (%)', TARGET);
+
   // 4. Analisis pematuhan mengikut ward
   if (wardStats.length > 1 || wardVal === 'ALL'){
     html += `<p style="${H}">4. Analisis Pematuhan Mengikut Ward</p>
@@ -3366,11 +3369,86 @@ function extractDriveFileId(url){
   return m ? m[1] : null;
 }
 
+// Lukis graf bar sebagai PNG (data URL) supaya boleh dimasukkan ke dalam Word
+function makeBarChartPng(items, opts){
+  opts = opts || {};
+  const W = 900, H = 420, padL = 60, padR = 20, padT = 64, padB = 60;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+  g.font = 'bold 20px Arial'; g.fillStyle = '#222'; g.textAlign = 'left';
+  g.fillText(opts.title || '', padL, 26);
+  const x0 = padL, x1 = W - padR, y0 = H - padB, y1 = padT;
+  g.font = '14px Arial'; g.textAlign = 'right'; g.textBaseline = 'middle';
+  [0, 25, 50, 75, 100].forEach(v => {
+    const y = y0 - (y0 - y1) * v / 100;
+    g.strokeStyle = '#dddddd'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
+    g.fillStyle = '#555'; g.fillText(v + '%', x0 - 8, y);
+  });
+  if (opts.target){
+    const ty = y0 - (y0 - y1) * opts.target / 100;
+    g.setLineDash([8, 6]); g.strokeStyle = '#1f6f43'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(x0, ty); g.lineTo(x1, ty); g.stroke(); g.setLineDash([]);
+    g.fillStyle = '#1f6f43'; g.font = 'bold 14px Arial'; g.textAlign = 'right'; g.textBaseline = 'alphabetic'; g.fillText('--- Sasaran ' + opts.target + '%', x1, 26);
+  }
+  const n = items.length || 1, slot = (x1 - x0) / n, bw = Math.min(70, slot * 0.6);
+  items.forEach((it, i) => {
+    const cx = x0 + slot * i + slot / 2;
+    if (it.pct !== null && it.pct !== undefined){
+      const h = (y0 - y1) * it.pct / 100;
+      g.fillStyle = it.pct >= 90 ? '#2E8B57' : it.pct >= 70 ? '#D88A1B' : '#B3402A';
+      g.fillRect(cx - bw / 2, y0 - h, bw, h);
+    }
+    g.fillStyle = '#222'; g.font = 'bold 15px Arial'; g.textAlign = 'center'; g.textBaseline = 'bottom';
+    const ptxt = (it.pct === null || it.pct === undefined) ? '—' : it.pct + '%';
+    const ph = (it.pct === null || it.pct === undefined) ? 0 : (y0 - y1) * it.pct / 100;
+    g.fillText(ptxt, cx, y0 - ph - 4);
+    g.textBaseline = 'top'; g.fillText(it.label, cx, y0 + 10);
+  });
+  g.strokeStyle = '#999'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y0); g.stroke();
+  return c.toDataURL('image/png');
+}
+
+// Graf + legenda sebagai HTML untuk laporan Word. items: [{label, pct, desc}]
+function wordChartHtml(items, title, target){
+  const png = makeBarChartPng(items, {title: title, target: target});
+  const legend = items.map(it => `<p style="font-family:Calibri,Arial,sans-serif; font-size:10pt; margin:1px 0;"><b>${escapeHtml(it.label)}.</b> ${escapeHtml(it.desc || '')}</p>`).join('');
+  return `<p style="text-align:center;"><img src="${png}" width="600" height="280" alt="Graf"></p>${legend}`;
+}
+
+// Bina fail Word dalam format MHTML (gambar tertanam sebagai bahagian MIME) supaya
+// gambar & graf benar-benar keluar dalam Word. (Data-URI biasa tidak dipaparkan oleh Word.)
 function downloadWordDoc(filename, innerHtmlContent){
   const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Laporan</title></head><body>";
-  const postHtml = "</body></html>";
-  const fullHtml = preHtml + innerHtmlContent + postHtml;
-  const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+  let html = preHtml + innerHtmlContent + "</body></html>";
+  const parts = [];
+  html = html.replace(/(<img\b[^>]*?\bsrc=")data:(image\/[a-zA-Z+.-]+);base64,([^"]+)(")/g, (m, pre, mime, b64, post) => {
+    const n = parts.length + 1;
+    const ext = mime.split('/')[1].replace('jpeg', 'jpg').replace('+xml', '');
+    const loc = 'file:///C:/laporan/image' + String(n).padStart(3, '0') + '.' + ext;
+    parts.push({loc: loc, mime: mime, b64: b64});
+    return pre + loc + post;
+  });
+  const wrap = str => str.replace(/(.{76})/g, '$1\r\n');
+  const boundary = '----=_NextPart_' + Date.now().toString(16);
+  const htmlB64 = btoa(unescape(encodeURIComponent(html)));
+  const lines = [
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/related; boundary="' + boundary + '"; type="text/html"',
+    '',
+    '--' + boundary,
+    'Content-Type: text/html; charset="utf-8"',
+    'Content-Transfer-Encoding: base64',
+    'Content-Location: file:///C:/laporan/laporan.htm',
+    '',
+    wrap(htmlB64),
+    ''
+  ];
+  parts.forEach(p => {
+    lines.push('--' + boundary, 'Content-Type: ' + p.mime, 'Content-Transfer-Encoding: base64', 'Content-Location: ' + p.loc, '', wrap(p.b64), '');
+  });
+  lines.push('--' + boundary + '--', '');
+  const blob = new Blob([lines.join('\r\n')], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -4395,6 +4473,7 @@ $('ggDownloadWordBtn').addEventListener('click', async () => {
   </table>
 
   <p style="${H}">4. Kebersihan Mengikut Bahagian</p>
+  ${wordChartHtml(stats.map(st => ({label: st.shortLabel, pct: st.pct, desc: st.label + ' — ' + st.applicable + ' item dinilai'})), 'Kebersihan mengikut bahagian (%)', 90)}
   <table style="border-collapse:collapse; width:100%; ${F}">
     <tr><td style="${TH}">Bahagian</td><td style="${TH}">Tanggungjawab</td><td style="${TH}">Dinilai</td><td style="${TH}">% Bersih</td></tr>
     ${stats.map(st => `<tr>
@@ -5132,6 +5211,7 @@ $('envDownloadWordBtn').addEventListener('click', async () => {
   </table>
 
   <p style="${H}">4. Pematuhan Mengikut Bahagian</p>
+  ${wordChartHtml(stats.map(st => ({label: st.shortLabel, pct: st.pct, desc: st.label + ' — ' + st.applicable + ' item dinilai'})), 'Pematuhan mengikut bahagian (%)', 90)}
   <table style="border-collapse:collapse; width:100%; ${F}">
     <tr><td style="${TH}">Bahagian</td><td style="${TH}">Dinilai</td><td style="${TH}">% Pematuhan</td></tr>
     ${stats.map(st => `<tr>
