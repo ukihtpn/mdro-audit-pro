@@ -586,17 +586,6 @@ body.gate-open{overflow:hidden;}
       </div>
     </div>
     <div class="card">
-      <h2>Audit belum lengkap (Draft)</h2>
-      <div class="stat-big" id="draftCount" style="color:var(--amber);">—</div>
-      <div class="stat-label">audit perlu dilengkapkan (interview staf / tandatangan)</div>
-      <div id="draftList" style="margin-top:10px;"></div>
-    </div>
-    <div class="card">
-      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
-      <div class="dash-note">Draf tersimpan dalam Google Sheet. Mana-mana auditor boleh tekan "Sambung" untuk teruskan.</div>
-      <div id="localDraftList" style="margin-top:10px;">Memuatkan...</div>
-    </div>
-    <div class="card">
       <h2>Pematuhan by ward</h2>
       <div class="dash-note" id="dashSourceNote">Memuatkan...</div>
       <div id="wardBars"></div>
@@ -638,26 +627,6 @@ body.gate-open{overflow:hidden;}
       <div class="dash-note" id="cleanerDashNote">Memuatkan...</div>
       <div class="qcol-chart" id="cleanerWardBars"></div>
       <div class="q-legend" id="cleanerWardLegend"></div>
-    </div>
-    <div class="card">
-      <h2>Ask Cleaner — Pematuhan mengikut Bulan</h2>
-      <div class="qcol-chart" id="cleanerMonthBars"></div>
-      <div class="q-legend" id="cleanerMonthLegend"></div>
-    </div>
-  </div>
-
-  <div class="tab-panel" id="panel-entry">
-  <div class="card">
-    <h2>Edit audit yang telah dihantar</h2>
-    <div class="dash-note">Pilih audit sedia ada, ubah maklumat/jawapan/gambar, kemudian tekan "Hantar audit" — rekod asal akan dikemas kini (tiada rekod berganda).</div>
-    <input type="text" id="editSearch" placeholder="Cari ward / bed / nama / tarikh" style="margin-top:8px; width:100%;">
-    <div id="editList" style="margin-top:8px;"></div>
-  </div>
-  <div class="dash-note" id="editBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
-  <div class="card">
-    <h2><span class="num">1</span>Auditor</h2>
-    <div class="field">
-      <div class="auditor-display" id="auditorDisplay" style="font-weight:800; color:var(--teal-deep); font-size:15px;">—</div>
     </div>
   </div>
 
@@ -783,6 +752,56 @@ body.gate-open{overflow:hidden;}
   </div>
   </div>
 
+  <div class="tab-panel" id="panel-entry">
+  <div class="seg" id="mdroViewSeg" style="margin-bottom:12px;">
+    <button type="button" class="plain active" data-entryview="new">Entry Baharu</button>
+    <button type="button" class="plain" data-entryview="list">Senarai Entry</button>
+  </div>
+  <div id="mdroFormWrap">
+  <div class="card">
+    <h2>Edit audit yang telah dihantar</h2>
+    <div class="dash-note">Pilih audit sedia ada, ubah maklumat/jawapan/gambar, kemudian tekan "Hantar audit" — rekod asal akan dikemas kini (tiada rekod berganda).</div>
+    <input type="text" id="editSearch" placeholder="Cari ward / bed / nama / tarikh" style="margin-top:8px; width:100%;">
+    <div id="editList" style="margin-top:8px;"></div>
+  </div>
+  <div class="dash-note" id="editBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
+  <div class="card">
+    <h2><span class="num">1</span>Auditor</h2>
+    <div class="field">
+      <div class="auditor-display" id="auditorDisplay" style="font-weight:800; color:var(--teal-deep); font-size:15px;">—</div>
+    </div>
+    </div>
+    <div id="listPending" style="display:none;">
+    <div class="card">
+      <h2>Audit belum lengkap (Draft)</h2>
+      <div class="stat-big" id="draftCount" style="color:var(--amber);">—</div>
+      <div class="stat-label">audit perlu dilengkapkan (interview staf / tandatangan)</div>
+      <div id="draftList" style="margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
+      <div class="dash-note">Draf tersimpan dalam Google Sheet. Mana-mana auditor boleh tekan "Sambung" untuk teruskan.</div>
+      <div id="localDraftList" style="margin-top:10px;">Memuatkan...</div>
+    </div>
+    </div>
+  </div>
+  <div id="mdroListWrap" style="display:none;">
+    <div class="card">
+      <h2>Senarai Entry</h2>
+      <div class="seg" id="listSeg">
+        <button type="button" class="plain active" data-view="done">Lengkap</button>
+        <button type="button" class="plain" data-view="pending">Pending</button>
+      </div>
+    </div>
+    <div id="listDone">
+    <div class="card">
+      <h2>Ask Cleaner — Pematuhan mengikut Bulan</h2>
+      <div class="qcol-chart" id="cleanerMonthBars"></div>
+      <div class="q-legend" id="cleanerMonthLegend"></div>
+    </div>
+  </div>
+  </div>
+
   <div class="tab-panel" id="panel-report">
     <div class="card no-print">
       <h2>Jana Laporan</h2>
@@ -875,12 +894,11 @@ body.gate-open{overflow:hidden;}
   </div>
 
   <div class="tab-panel" id="panel-glogerm">
-    <div class="card">
-      <h2>Edit audit yang telah dihantar</h2>
-      <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
-      <input type="text" id="ggEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
-      <div id="ggEditList" style="margin-top:8px;"></div>
-    </div>
+  <div class="seg" id="ggViewSeg" style="margin-bottom:12px;">
+    <button type="button" class="plain active" data-entryview="new">Entry Baharu</button>
+    <button type="button" class="plain" data-entryview="list">Senarai Entry</button>
+  </div>
+  <div id="ggFormWrap">
     <div class="dash-note" id="ggEditBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
     <div class="card">
       <h2><span class="num">1</span>Butiran Audit</h2>
@@ -941,6 +959,31 @@ body.gate-open{overflow:hidden;}
       <button class="ghost-btn" id="ggCancelBtn">Batal / Kosongkan borang</button>
     </div>
   </div>
+  <div id="ggListWrap" style="display:none;">
+    <div class="card">
+      <h2>Senarai Entry</h2>
+      <div class="seg" id="gglistSeg">
+        <button type="button" class="plain active" data-view="done">Lengkap</button>
+        <button type="button" class="plain" data-view="pending">Pending</button>
+      </div>
+    </div>
+    <div id="gglistDone">
+    <div class="card">
+      <h2>Edit audit yang telah dihantar</h2>
+      <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
+      <input type="text" id="ggEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
+      <div id="ggEditList" style="margin-top:8px;"></div>
+    </div>
+    </div>
+    <div id="gglistPending" style="display:none;">
+    <div class="card">
+      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
+      <div class="dash-note">Draf tersimpan dalam Google Sheet. Mana-mana auditor boleh tekan "Sambung" untuk teruskan.</div>
+      <div id="ggDraftList" style="margin-top:10px;">Memuatkan...</div>
+    </div>
+    </div>
+  </div>
+  </div>
 
   <div class="tab-panel" id="panel-ggdash">
     <div class="card">
@@ -977,11 +1020,6 @@ body.gate-open{overflow:hidden;}
       </div>
       <div class="dash-note" id="ggDashNote">Memuatkan...</div>
       <button class="ghost-btn" id="ggRefreshBtn">Muat semula</button>
-    </div>
-    <div class="card">
-      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
-      <div class="dash-note">Draf tersimpan dalam Google Sheet. Mana-mana auditor boleh tekan "Sambung" untuk teruskan.</div>
-      <div id="ggDraftList" style="margin-top:10px;">Memuatkan...</div>
     </div>
     <div class="card">
       <h2>Trend Kebersihan — Cleaner vs HCW</h2>
@@ -1112,12 +1150,11 @@ body.gate-open{overflow:hidden;}
   </div>
 
   <div class="tab-panel" id="panel-env">
-    <div class="card">
-      <h2>Edit audit yang telah dihantar</h2>
-      <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
-      <input type="text" id="envEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
-      <div id="envEditList" style="margin-top:8px;"></div>
-    </div>
+  <div class="seg" id="envViewSeg" style="margin-bottom:12px;">
+    <button type="button" class="plain active" data-entryview="new">Entry Baharu</button>
+    <button type="button" class="plain" data-entryview="list">Senarai Entry</button>
+  </div>
+  <div id="envFormWrap">
     <div class="dash-note" id="envEditBanner" style="display:none; font-weight:700; color:var(--red);">MOD EDIT — anda sedang mengedit audit yang telah dihantar.</div>
     <div class="card">
       <h2><span class="num">1</span>Butiran Audit</h2>
@@ -1172,6 +1209,30 @@ body.gate-open{overflow:hidden;}
       <button class="ghost-btn" id="envCancelBtn">Batal / Kosongkan borang</button>
     </div>
   </div>
+  <div id="envListWrap" style="display:none;">
+    <div class="card">
+      <h2>Senarai Entry</h2>
+      <div class="seg" id="envlistSeg">
+        <button type="button" class="plain active" data-view="done">Lengkap</button>
+        <button type="button" class="plain" data-view="pending">Pending</button>
+      </div>
+    </div>
+    <div id="envlistDone">
+    <div class="card">
+      <h2>Edit audit yang telah dihantar</h2>
+      <div class="dash-note">Pilih audit sedia ada, ubah, kemudian tekan Hantar — rekod asal dikemas kini (tiada rekod berganda).</div>
+      <input type="text" id="envEditSearch" placeholder="Cari ward / bed / tarikh / auditor" style="margin-top:8px; width:100%;">
+      <div id="envEditList" style="margin-top:8px;"></div>
+    </div>
+    </div>
+    <div id="envlistPending" style="display:none;">
+    <div class="card">
+      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
+      <div id="envDraftList" style="margin-top:10px;">Memuatkan...</div>
+    </div>
+    </div>
+  </div>
+  </div>
 
   <div class="tab-panel" id="panel-envdash">
     <div class="card">
@@ -1206,10 +1267,6 @@ body.gate-open{overflow:hidden;}
       </div>
       <div class="dash-note" id="envDashNote">Memuatkan...</div>
       <button class="ghost-btn" id="envRefreshBtn">Muat semula</button>
-    </div>
-    <div class="card">
-      <h2>Draf Belum Siap (boleh disambung sesiapa)</h2>
-      <div id="envDraftList" style="margin-top:10px;">Memuatkan...</div>
     </div>
     <div class="card">
       <h2>Trend Pematuhan Mengikut Bahagian</h2>
@@ -2255,7 +2312,7 @@ $('localDraftList').addEventListener('click', async e => {
     if (!d || !d.payload){ showToast('Draf tidak dijumpai.', true); return; }
     loadDraftIntoForm(d.payload);
     activeDraftKey = d.draftId;
-    switchTab('entry');
+    goEntry('entry');
     showToast(d.startedBy && d.startedBy !== currentAuditor
       ? `Draf dimulakan oleh ${d.startedBy} — sila sambung isi.`
       : 'Draf dimuatkan — sila sambung isi.');
@@ -2304,11 +2361,57 @@ function switchTab(tab){
   if (activeBtn && activeBtn.scrollIntoView){
     try{ activeBtn.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'}); }catch(e){}
   }
-  document.querySelector('.scorebar').style.display = (tab === 'entry') ? 'flex' : 'none';
+  document.querySelector('.scorebar').style.display = (tab === 'entry' && !(document.getElementById('mdroListWrap') && document.getElementById('mdroListWrap').style.display !== 'none')) ? 'flex' : 'none';
   if (tab === 'dashboard'){ loadDashboard(); loadCleanerDashboard(); loadSharedDrafts().then(renderLocalDrafts); }
   if (tab === 'ggdash'){ loadGgDashboard(); loadSharedDrafts().then(renderGgDrafts); }
   if (tab === 'envdash'){ loadEnvDashboard(); loadSharedDrafts().then(renderEnvDrafts); }
+  if (tab === 'list'){ loadDashboard(); loadSharedDrafts().then(renderLocalDrafts); }
+  if (tab === 'gglist'){ loadGgDashboard(); loadSharedDrafts().then(renderGgDrafts); }
+  if (tab === 'envlist'){ loadEnvDashboard(); loadSharedDrafts().then(renderEnvDrafts); }
 }
+// Togol Lengkap / Pending dalam tab Senarai Audit
+['list','gglist','envlist'].forEach(pid => {
+  const seg = document.getElementById(pid + 'Seg'); if (!seg) return;
+  seg.addEventListener('click', e => {
+    const b = e.target.closest('button[data-view]'); if (!b) return;
+    seg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    document.getElementById(pid + 'Done').style.display = (b.dataset.view === 'done') ? '' : 'none';
+    document.getElementById(pid + 'Pending').style.display = (b.dataset.view === 'pending') ? '' : 'none';
+  });
+});
+const LIST_LIMIT = {mdro:15, gg:15, env:15};
+// Togol dalam tab New Entry: [Entry Baharu | Senarai Entry]
+function setEntryView(pref, view){
+  const seg = document.getElementById(pref + 'ViewSeg'); if (!seg) return;
+  seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.entryview === view));
+  document.getElementById(pref + 'FormWrap').style.display = (view === 'new') ? '' : 'none';
+  document.getElementById(pref + 'ListWrap').style.display = (view === 'list') ? '' : 'none';
+  if (pref === 'mdro') document.querySelector('.scorebar').style.display = (view === 'new') ? 'flex' : 'none';
+  if (view === 'list'){
+    if (pref === 'mdro'){ loadDashboard(); loadSharedDrafts().then(renderLocalDrafts); }
+    if (pref === 'gg'){ loadGgDashboard(); loadSharedDrafts().then(renderGgDrafts); }
+    if (pref === 'env'){ loadEnvDashboard(); loadSharedDrafts().then(renderEnvDrafts); }
+  }
+}
+['mdro','gg','env'].forEach(pref => {
+  const seg = document.getElementById(pref + 'ViewSeg'); if (!seg) return;
+  seg.addEventListener('click', e => {
+    const b = e.target.closest('button[data-entryview]'); if (!b) return;
+    setEntryView(pref, b.dataset.entryview);
+  });
+});
+function goEntry(tab){
+  const pref = {entry:'mdro', glogerm:'gg', env:'env'}[tab];
+  switchTab(tab);
+  setEntryView(pref, 'new');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.list-more-btn'); if (!b) return;
+  LIST_LIMIT[b.dataset.k] += 15;
+  if (b.dataset.k === 'mdro') renderEditList();
+  if (b.dataset.k === 'gg') ggRenderEditList();
+  if (b.dataset.k === 'env') envRenderEditList();
+});
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
@@ -2696,7 +2799,7 @@ $('draftList').addEventListener('click', async e => {
     loadServerDraftIntoForm(r);
     editingId = r.id; if ($('editBanner')) $('editBanner').style.display = 'block';
     activeDraftKey = null;
-    switchTab('entry');
+    goEntry('entry');
     showToast(r.auditor && r.auditor !== currentAuditor
       ? `Draf dimulakan oleh ${r.auditor} — lengkapkan dan hantar semula.`
       : 'Draf dimuatkan — lengkapkan dan hantar semula.');
@@ -2727,11 +2830,15 @@ function renderEditList(){
   const q = ($('editSearch').value || '').toLowerCase();
   const recs = lastRecords.filter(r => r.id && r.status !== 'Draft')
     .filter(r => !q || [r.ward, r.bed, r.patientName, r.date, r.auditor].join(' ').toLowerCase().includes(q))
-    .sort((a,b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
+    .sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  const total = recs.length; recs.length = Math.min(recs.length, LIST_LIMIT['mdro']);
   el.innerHTML = recs.length ? recs.map(r => `<div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
     <div class="finding-q">${escapeHtml(r.ward||'')} · ${escapeHtml(r.bed||'')} — ${escapeHtml(r.patientName||'')}<br><span style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.date||'')} · ${escapeHtml(r.auditor||'')} · ${escapeHtml(String(r.compliancePercent))}%</span></div>
     <button type="button" class="ghost-btn edit-sent-btn" data-id="${escapeHtml(r.id)}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0;">Edit</button></div>`).join('')
     : '<div class="empty-hist">Tiada audit dijumpai.</div>';
+  if (total > recs.length) el.insertAdjacentHTML('beforeend', `<button type="button" class="ghost-btn list-more-btn" data-k="env">Papar lagi (${recs.length} / ${total})</button>`);
+  if (total > recs.length) el.insertAdjacentHTML('beforeend', `<button type="button" class="ghost-btn list-more-btn" data-k="gg">Papar lagi (${recs.length} / ${total})</button>`);
+  if (total > recs.length) el.insertAdjacentHTML('beforeend', `<button type="button" class="ghost-btn list-more-btn" data-k="mdro">Papar lagi (${recs.length} / ${total})</button>`);
 }
 document.addEventListener('input', e => { if (e.target && e.target.id === 'editSearch') renderEditList(); });
 document.addEventListener('click', e => {
@@ -2739,6 +2846,7 @@ document.addEventListener('click', e => {
   const r = lastRecords.find(x => String(x.id) === b.dataset.id); if (!r) return;
   loadServerDraftIntoForm(r);
   editingId = r.id; activeDraftKey = null;
+  goEntry('entry');
   $('editBanner').style.display = 'block';
   showToast('Mod edit — ubah dan tekan Hantar audit untuk kemas kini.');
   window.scrollTo({top: 0, behavior: 'smooth'});
@@ -3699,7 +3807,8 @@ function ggRenderEditList(){
   const el = $('ggEditList'); if (!el) return;
   const q = ($('ggEditSearch').value || '').toLowerCase();
   const recs = ggRecords.filter(r => r.id).filter(r => !q || [r.ward, r.bed, r.date, r.auditor, r.department].join(' ').toLowerCase().includes(q))
-    .sort((a,b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
+    .sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  const total = recs.length; recs.length = Math.min(recs.length, LIST_LIMIT['gg']);
   el.innerHTML = recs.length ? recs.map(r => `<div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
     <div class="finding-q">${escapeHtml(r.ward||'')}${r.bed ? ' · ' + escapeHtml(r.bed) : ''} — ${escapeHtml(r.department||'')}<br><span style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.date||'')} · ${escapeHtml(r.auditor||'')} · ${escapeHtml(String(r.cleanPercent))}%</span></div>
     <button type="button" class="ghost-btn gg-edit-sent-btn" data-id="${escapeHtml(r.id)}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0;">Edit</button></div>`).join('')
@@ -3729,6 +3838,7 @@ document.addEventListener('click', e => {
   });
   ggPhase = 'assess'; ggOpenIndex = 0;
   ggEditingId = r.id; ggActiveDraftKey = null;
+  goEntry('glogerm');
   $('ggEditBanner').style.display = 'block';
   renderGgChecklist();
   showToast('Mod edit — ubah dan tekan Hantar untuk kemas kini.');
@@ -3787,7 +3897,7 @@ $('ggDraftList').addEventListener('click', async e => {
     if (!d || !d.payload){ showToast('Draf tidak dijumpai.', true); return; }
     ggLoadDraftIntoForm(d.payload);
     ggActiveDraftKey = d.draftId;
-    switchTab('glogerm');
+    goEntry('glogerm');
     showToast(d.startedBy && d.startedBy !== currentAuditor
       ? `Draf dimulakan oleh ${d.startedBy} — sila sambung isi.`
       : 'Draf dimuatkan — sila sambung isi.');
@@ -4560,7 +4670,8 @@ function envRenderEditList(){
   const el = $('envEditList'); if (!el) return;
   const q = ($('envEditSearch').value || '').toLowerCase();
   const recs = envRecords.filter(r => r.id).filter(r => !q || [r.ward, r.bed, r.date, r.auditor, r.department].join(' ').toLowerCase().includes(q))
-    .sort((a,b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
+    .sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  const total = recs.length; recs.length = Math.min(recs.length, LIST_LIMIT['env']);
   el.innerHTML = recs.length ? recs.map(r => `<div class="finding-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
     <div class="finding-q">${escapeHtml(r.ward||'')}${r.bed ? ' · ' + escapeHtml(r.bed) : ''} — ${escapeHtml(r.department||'')}<br><span style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.date||'')} · ${escapeHtml(r.auditor||'')} · ${escapeHtml(String(r.compliancePercent))}%</span></div>
     <button type="button" class="ghost-btn env-edit-sent-btn" data-id="${escapeHtml(r.id)}" style="padding:6px 12px; font-size:12px; width:auto; margin-top:0;">Edit</button></div>`).join('')
@@ -4587,6 +4698,7 @@ document.addEventListener('click', e => {
     });
   });
   envEditingId = r.id; envActiveDraftKey = null; envOpenIndex = 0;
+  goEntry('env');
   $('envEditBanner').style.display = 'block';
   renderEnvChecklist();
   showToast('Mod edit — ubah dan tekan Hantar untuk kemas kini.');
@@ -4661,7 +4773,7 @@ $('envDraftList').addEventListener('click', async e => {
     if (!d || !d.payload){ showToast('Draf tidak dijumpai.', true); return; }
     envLoadDraftIntoForm(d.payload);
     envActiveDraftKey = d.draftId;
-    switchTab('env');
+    goEntry('env');
     showToast(d.startedBy && d.startedBy !== currentAuditor
       ? `Draf dimulakan oleh ${d.startedBy} — sila sambung isi.`
       : 'Draf dimuatkan — sila sambung isi.');
