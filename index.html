@@ -5718,6 +5718,105 @@ function buildIpcReportHtml(pre, recs){
       <td class="sar">${sarHtml}</td></tr>`;
   }).join('');
 
+  // ---------- TREND (Bulanan / Minggu Epid) ----------
+  const MON_S = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
+  const monKey = r => (normDate(r.date) || '').slice(0, 7);
+  const ewKey = r => { const ew = getEpidWeek(normDate(r.date)); return ew ? `${ew.year}-EW${String(ew.week).padStart(2,'0')}` : ''; };
+  const monLbl = k => { const [y, m] = k.split('-'); return `${MON_S[(+m) - 1]} ${y.slice(2)}`; };
+  const ewLbl = k => k.split('-')[1] + ' ' + k.slice(2, 4);
+  function trendFor(keyFn){
+    const per = {};
+    rows.forEach(x => {
+      if (x.st === 'na') return;
+      const k = keyFn(x.rec); if (!k) return;
+      const p = per[k] || (per[k] = {ok: 0, bad: 0, recs: new Set(), sec: {}});
+      p.recs.add(x.rec);
+      const s = p.sec[x.key] || (p.sec[x.key] = {ok: 0, bad: 0});
+      if (x.st === 'ok'){ p.ok++; s.ok++; } else { p.bad++; s.bad++; }
+    });
+    return Object.keys(per).sort().map(k => ({k, ...per[k]}));
+  }
+  const pctOk = o => o && (o.ok + o.bad) ? Math.round(o.ok / (o.ok + o.bad) * 1000) / 10 : null;
+  function trendSvg(tr, lblFn){
+    const W = 760, H = 230, L = 34, R = 12, T = 18, B = 34;
+    const n = tr.length, iw = W - L - R, ih = H - T - B;
+    const PADX = 26; const x = i => L + PADX + (n === 1 ? (iw - 2*PADX) / 2 : i * (iw - 2*PADX) / (n - 1));
+    const y = v => T + ih - v / 100 * ih;
+    let g = '';
+    [0, 25, 50, 75, 100].forEach(v => g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#e6e6e6"/><text x="${L - 6}" y="${y(v) + 3}" font-size="9" text-anchor="end" fill="#777">${v}</text>`);
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(90)}" y2="${y(90)}" stroke="#137a46" stroke-dasharray="5 4"/><text x="${L + 4}" y="${y(90) - 4}" font-size="9" text-anchor="start" fill="#137a46">Sasaran 90%</text>`;
+    const pts = tr.map((p, i) => ({i, v: pctOk(p)})).filter(p => p.v !== null);
+    if (pts.length > 1) g += `<polyline fill="none" stroke="#555" stroke-width="2" points="${pts.map(p => x(p.i) + ',' + y(p.v)).join(' ')}"/>`;
+    pts.forEach(p => g += `<circle cx="${x(p.i)}" cy="${y(p.v)}" r="4.5" fill="${ipcPctColor(p.v)}"/><text x="${x(p.i)}" y="${y(p.v) - 9}" font-size="9.5" font-weight="700" text-anchor="middle" fill="${ipcPctColor(p.v)}">${p.v}</text>`);
+    const step = Math.ceil(n / 16);
+    tr.forEach((p, i) => { if (i % step === 0 || i === n - 1) g += `<text x="${x(i)}" y="${H - B + 14}" font-size="9" text-anchor="middle" fill="#444">${E(lblFn(p.k))}</text>`; });
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${g}</svg>`;
+  }
+  function trendTable(tr, lblFn){
+    const head = '<tr><th>' + META.comp + '</th>' + tr.map(p => `<th>${E(lblFn(p.k))}</th>`).join('') + '</tr>';
+    const cell = v => v === null ? '<td class="tc">—</td>' : `<td class="tc" style="background:${v >= 90 ? '#e3f3ea' : v >= 70 ? '#fbf1d3' : '#fbe3da'};color:${ipcPctColor(v)}">${v}</td>`;
+    const secRows = usedSecs.map(s => `<tr><td>${E(s.short)} · ${E(s.label.replace(/^\d+\.\s*/, ''))}</td>${tr.map(p => cell(pctOk(p.sec[s.key]))).join('')}</tr>`).join('');
+    const tot = `<tr class="grp"><td>Keseluruhan (%)</td>${tr.map(p => cell(pctOk(p))).join('')}</tr>`;
+    const cnt = `<tr><td>Bilangan audit</td>${tr.map(p => `<td class="tc">${p.recs.size}</td>`).join('')}</tr>`;
+    return `<div class="tw"><table class="tt">${head}${tot}${secRows}${cnt}</table></div>`;
+  }
+  // ---------- Graf bar berkumpulan (gaya slaid "Summary Findings") ----------
+  const SHORT_MDRO = {c0:'MDRO FORM', c1:'PATIENT ISOLATION', c2:'SIGNAGE', c3:'HAND HYGIENE', c4:'PPE STATION',
+    c5:'MEDICAL EQUIPMENT', c6:'CLINICAL WASTE', c7:'TAG BHT', c8:'CHG BATHING', c9:'PATIENT EDUCATION'};
+  const TREND_TARGET = 90;
+  const SERIES_COL = ['#4472C4','#ED7D31','#A5A5A5','#FFC000','#5B9BD5','#70AD47'];
+  function groupedSvg(trAll, lblFn){
+    if (!trAll.length || !usedSecs.length) return '';
+    const MAXP = 6;
+    const tr = trAll.slice(-MAXP);
+    const W = 960, H = 360, L = 34, R = 10, T = 26, B = 120;
+    const iw = W - L - R, ih = H - T - B, n = usedSecs.length, m = tr.length;
+    const gw = iw / n, bw = Math.min(26, gw * 0.82 / m);
+    const y = v => T + ih - v / 100 * ih;
+    let g = '';
+    [0, 20, 40, 60, 80, 100].forEach(v => g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#e8e8e8"/><text x="${L - 6}" y="${y(v) + 3}" font-size="10" text-anchor="end" fill="#666">${v}</text>`);
+    usedSecs.forEach((s, si) => {
+      const gx = L + si * gw + (gw - bw * m) / 2;
+      let latest = null;
+      tr.forEach((p, pi) => {
+        const v = pctOk(p.sec[s.key]);
+        if (v === null) return;
+        latest = v;
+        const bx = gx + pi * bw;
+        const bh = Math.max(v / 100 * ih, v === 0 ? 0 : 1);
+        g += `<rect x="${bx + 0.5}" y="${y(v)}" width="${bw - 1}" height="${bh}" fill="${SERIES_COL[pi % SERIES_COL.length]}"/>`;
+        const lx = bx + bw / 2;
+        g += bw < 15
+          ? `<text x="${lx + 3}" y="${y(v) - 3}" font-size="9" fill="#333" transform="rotate(-90 ${lx + 3} ${y(v) - 3})">${Math.round(v)}</text>`
+          : `<text x="${lx}" y="${y(v) - 3}" font-size="9.5" text-anchor="middle" fill="#333">${Math.round(v)}</text>`;
+      });
+      const cx = L + si * gw + gw / 2;
+      const lab = (pre === 'report' ? (SHORT_MDRO[s.key] || s.label) : s.label.replace(/^\d+\.\s*/, '')).toUpperCase();
+      const short = lab.length > 26 ? lab.slice(0, 25) + '…' : lab;
+      g += `<text x="${cx + 4}" y="${T + ih + 12}" font-size="10" font-weight="700" text-anchor="end" fill="#222" transform="rotate(-40 ${cx + 4} ${T + ih + 12})">${E(short)}</text>`;
+    });
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(TREND_TARGET)}" y2="${y(TREND_TARGET)}" stroke="#E00000" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="#999"/>`;
+    const legend = tr.map((p, pi) => `<span><i style="background:${SERIES_COL[pi % SERIES_COL.length]}"></i>${E(lblFn(p.k))}</span>`).join('') +
+      `<span><i style="background:none;border-top:2px dashed #E00000;height:0;margin-top:5px"></i>Sasaran ${TREND_TARGET}%</span>`;
+    const ttl = {report: 'AUDIT MDRO CHECKLIST', ggReport: 'AUDIT GLO GERM', envReport: 'ENVIRONMENT VISUAL AUDIT'}[pre];
+    return `<div class="gbox"><div class="gttl">RINGKASAN TREND: ${ttl}</div>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${g}</svg>
+      <div class="glg">${legend}</div>
+      <div class="sm" style="margin-top:4px;">${trAll.length > MAXP ? `Graf menunjukkan ${MAXP} tempoh terkini (jadual di bawah papar semua)` : ''}</div></div>`;
+  }
+  const trM = trendFor(monKey), trW = trendFor(ewKey);
+  const defTrend = trM.length > 1 ? 'm' : 'w';
+  const trendHtml = !rows.length ? '' : `
+<h3>Trend Pematuhan</h3>
+<div class="tsw noprint"><label><input type="radio" name="tmode" value="m" ${defTrend === 'm' ? 'checked' : ''}> Bulanan</label>
+  <label><input type="radio" name="tmode" value="w" ${defTrend === 'w' ? 'checked' : ''}> Minggu Epid</label></div>
+<div class="tpane" data-t="m" ${defTrend === 'm' ? '' : 'style="display:none"'}>
+  <div class="sm"><b>Trend bulanan</b> — ${trM.length} bulan</div><div class="gbox"><div class="gttl">PEMATUHAN KESELURUHAN ${{report:'MDRO',ggReport:'GLO GERM',envReport:'ENVIRONMENT'}[pre]} IKUT BULAN</div>${trendSvg(trM, monLbl)}</div>${groupedSvg(trM, monLbl)}${trendTable(trM, monLbl)}</div>
+<div class="tpane" data-t="w" ${defTrend === 'w' ? '' : 'style="display:none"'}>
+  <div class="sm"><b>Trend minggu epid</b> — ${trW.length} minggu</div><div class="gbox"><div class="gttl">PEMATUHAN KESELURUHAN ${{report:'MDRO',ggReport:'GLO GERM',envReport:'ENVIRONMENT'}[pre]} IKUT MINGGU EPID</div>${trendSvg(trW, ewLbl)}</div>${groupedSvg(trW, ewLbl)}${trendTable(trW, ewLbl)}</div>
+<script>document.querySelectorAll('input[name=tmode]').forEach(function(r){r.addEventListener('change',function(){document.querySelectorAll('.tpane').forEach(function(p){p.style.display=p.getAttribute('data-t')===r.value?'':'none';});});});<\/script>`;
+
   const comments = uniq(recs.map(r => r.comments)).map(t => `<li>${E(t)}</li>`).join('');
   const wardShort = wardSel === 'ALL' ? 'semua ward' : wardSel;
   const summary = overall === null
@@ -5776,6 +5875,16 @@ function buildIpcReportHtml(pre, recs){
   .sign{display:flex;gap:40px;margin-top:34px;}
   .sign>div{flex:1;} .line{border-bottom:1px solid #333;height:44px;margin:10px 0 6px;}
   .sm{font-size:10.5px;color:#555;}
+  .gbox{border:1px solid #ccc;padding:10px;margin:8px 0 14px;break-inside:avoid;}
+  .gttl{background:#FFE699;text-align:center;font-weight:800;font-size:14px;padding:7px;letter-spacing:.02em;}
+  .glg{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:11px;font-weight:700;margin-top:4px;}
+  .glg span{display:flex;align-items:center;gap:5px;} .glg i{display:inline-block;width:14px;height:11px;}
+  .tsw{display:flex;gap:16px;margin:2px 0 8px;font-size:12px;font-weight:700;}
+  .tsw label{cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .tw{overflow-x:auto;margin-top:8px;}
+  .tt{font-size:10px;} .tt th{text-align:center;white-space:nowrap;padding:4px 5px;} .tt th:first-child{text-align:left;}
+  .tt td{padding:4px 5px;} .tt td.tc{text-align:center;font-weight:700;white-space:nowrap;}
+  @media print{ .noprint{display:none;} .tpane{break-inside:avoid;} }
   @media print{ .bar{display:none;} body{padding:0;} tr{break-inside:avoid;} .score,.chart{break-inside:avoid;} }
 </style></head><body><div class="wrap">
 <div class="bar"><button onclick="window.print()">🖨️ Cetak / Simpan PDF</button></div>
@@ -5793,6 +5902,7 @@ function buildIpcReportHtml(pre, recs){
 <div class="chart">${chart}</div>
 <div class="legend">${chartLegend}</div>
 <div class="hint">Petunjuk: Hijau ≥90%, kuning 70–89%, merah &lt;70%.</div>
+${trendHtml}
 <h3>Penemuan Tidak Patuh &amp; Saranan</h3>
 ${findRows ? `<table class="ft"><tr><th>Bil</th><th>${META.badItem}</th><th>Saranan</th></tr>${findRows}</table>` : '<p>Tiada penemuan ketidakpatuhan. Tahniah!</p>'}
 ${comments ? `<h3>Komen / Tindakan Juruaudit</h3><ul>${comments}</ul>` : ''}
