@@ -182,6 +182,25 @@ input,textarea{font-family:inherit;}
 .q-bar{margin-bottom:16px;}
 .q-bar:last-child{margin-bottom:0;}
 .q-label{font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.35; margin-bottom:5px;}
+.apick-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.apick-btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;cursor:pointer;}
+.apick-count{font-size:12.5px;color:var(--ink-soft);margin-left:auto;}
+.apick-list{border:1px solid var(--line);border-radius:10px;max-height:340px;overflow:auto;background:var(--card);}
+.apick-row{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-bottom:1px solid var(--line);cursor:pointer;margin:0;}
+.apick-row:last-child{border-bottom:0;}
+.field .apick-list label.apick-row{display:flex;font-size:inherit;font-weight:400;text-transform:none;letter-spacing:0;margin:0;color:inherit;}
+.apick-row input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--teal);}
+.apick-row .a1{font-weight:700;font-size:13.5px;color:var(--ink);}
+.apick-row .a2{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+.apick-pct{margin-left:auto;font-weight:800;font-size:13px;flex:none;}
+.apick-empty{padding:12px;font-size:13px;color:var(--ink-soft);}
+.ipc-modal{position:fixed;inset:0;background:rgba(20,15,35,.6);z-index:9999;display:none;flex-direction:column;}
+.ipc-modal.show{display:flex;}
+.ipc-modal-bar{display:flex;gap:8px;align-items:center;padding:10px 12px;background:#fff;border-bottom:1px solid #ddd;flex-wrap:wrap;}
+.ipc-modal-bar b{flex:1;font-size:14px;min-width:140px;color:#222;}
+.ipc-modal-bar button{border:0;border-radius:8px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;}
+.ipc-modal iframe{flex:1;width:100%;border:0;background:#fff;}
+@media print{ .ipc-modal{display:none !important;} }
 .ghost-btn{
   width:100%; margin-top:14px; padding:12px; border-radius:9px; border:1.5px solid var(--teal);
   background:#fff; color:var(--teal-deep); font-weight:700; font-size:14.5px;
@@ -834,11 +853,16 @@ body.gate-open{overflow:hidden;}
         <select id="reportPeriodValueSelect"></select>
       </div>
       <div class="field">
-        <label for="reportBedFilter">Bilik / Katil</label>
-        <select id="reportBedFilter"><option value="ALL">Semua bilik / katil</option></select>
-        <div class="dash-note" style="margin-top:4px;">Senarai bilik/katil ikut ward &amp; tempoh yang dipilih.</div>
+        <label>Pilih audit untuk laporan</label>
+        <div class="apick-tools">
+          <button type="button" class="apick-btn" data-pick="all" data-pre="report">✓ Pilih semua</button>
+          <button type="button" class="apick-btn" data-pick="none" data-pre="report">✕ Kosongkan</button>
+          <span class="apick-count" id="reportPickCount"></span>
+        </div>
+        <div class="apick-list" id="reportAuditPick"><div class="apick-empty">Memuatkan senarai audit…</div></div>
       </div>
       <button class="submit-btn" id="generateReportBtn">Jana Laporan</button>
+      <button class="submit-btn no-print" id="reportIpcBtn" style="margin-top:8px;background:#137a46;">👁️ Preview Laporan Penemuan + Gambar</button>
     </div>
 
     <div id="reportOutput" style="display:none;">
@@ -856,7 +880,6 @@ body.gate-open{overflow:hidden;}
         </div>
         <button class="ghost-btn no-print" id="printReportBtn">Cetak / Simpan PDF</button>
         <button class="ghost-btn no-print" id="downloadWordBtn">Muat turun Word (.doc)</button>
-        <button class="submit-btn no-print" id="reportIpcBtn" style="margin-top:8px;">📋 Laporan Penemuan + Gambar (format IPC Round)</button>
       </div>
       <div class="card">
         <h2>Pematuhan mengikut soalan</h2>
@@ -1087,11 +1110,16 @@ body.gate-open{overflow:hidden;}
         <select id="ggReportPeriodValueSelect"></select>
       </div>
       <div class="field">
-        <label for="ggReportBedFilter">Bilik / Katil</label>
-        <select id="ggReportBedFilter"><option value="ALL">Semua bilik / katil</option></select>
-        <div class="dash-note" style="margin-top:4px;">Senarai bilik/katil ikut ward &amp; tempoh yang dipilih.</div>
+        <label>Pilih audit untuk laporan</label>
+        <div class="apick-tools">
+          <button type="button" class="apick-btn" data-pick="all" data-pre="ggReport">✓ Pilih semua</button>
+          <button type="button" class="apick-btn" data-pick="none" data-pre="ggReport">✕ Kosongkan</button>
+          <span class="apick-count" id="ggReportPickCount"></span>
+        </div>
+        <div class="apick-list" id="ggReportAuditPick"><div class="apick-empty">Memuatkan senarai audit…</div></div>
       </div>
       <button class="submit-btn" id="ggGenerateReportBtn">Jana Laporan</button>
+      <button class="submit-btn no-print" id="ggReportIpcBtn" style="margin-top:8px;background:#137a46;">👁️ Preview Laporan Penemuan + Gambar</button>
     </div>
 
     <div id="ggReportOutput" style="display:none;">
@@ -1109,7 +1137,6 @@ body.gate-open{overflow:hidden;}
         </div>
         <button class="ghost-btn no-print" id="ggPrintReportBtn">Cetak / Simpan PDF (gambar penuh)</button>
         <button class="ghost-btn no-print" id="ggDownloadWordBtn">Muat turun Word (.doc)</button>
-        <button class="submit-btn no-print" id="ggReportIpcBtn" style="margin-top:8px;">📋 Laporan Penemuan + Gambar (format IPC Round)</button>
       </div>
       <div class="card">
         <h2>Kebersihan mengikut Bahagian</h2>
@@ -1334,11 +1361,16 @@ body.gate-open{overflow:hidden;}
         <select id="envReportPeriodValueSelect"></select>
       </div>
       <div class="field">
-        <label for="envReportBedFilter">Bilik / Katil</label>
-        <select id="envReportBedFilter"><option value="ALL">Semua bilik / katil</option></select>
-        <div class="dash-note" style="margin-top:4px;">Senarai bilik/katil ikut ward &amp; tempoh yang dipilih.</div>
+        <label>Pilih audit untuk laporan</label>
+        <div class="apick-tools">
+          <button type="button" class="apick-btn" data-pick="all" data-pre="envReport">✓ Pilih semua</button>
+          <button type="button" class="apick-btn" data-pick="none" data-pre="envReport">✕ Kosongkan</button>
+          <span class="apick-count" id="envReportPickCount"></span>
+        </div>
+        <div class="apick-list" id="envReportAuditPick"><div class="apick-empty">Memuatkan senarai audit…</div></div>
       </div>
       <button class="submit-btn" id="envGenerateReportBtn">Jana Laporan</button>
+      <button class="submit-btn no-print" id="envReportIpcBtn" style="margin-top:8px;background:#137a46;">👁️ Preview Laporan Penemuan + Gambar</button>
     </div>
 
     <div id="envReportOutput" style="display:none;">
@@ -1355,7 +1387,6 @@ body.gate-open{overflow:hidden;}
           </div>
         </div>
         <button class="ghost-btn no-print" id="envDownloadWordBtn">Muat turun Word (.doc)</button>
-        <button class="submit-btn no-print" id="envReportIpcBtn" style="margin-top:8px;">📋 Laporan Penemuan + Gambar (format IPC Round)</button>
       </div>
       <div class="card">
         <h2>Pematuhan mengikut Bahagian</h2>
@@ -5387,33 +5418,92 @@ function reportWardRecs(pre){
   const recs = c.recs() || [];
   return w === 'ALL' ? recs : recs.filter(r => r.ward === w);
 }
-function filterByBed(recs, pre){
-  const sel = $(pre + 'BedFilter');
-  const v = sel ? sel.value : 'ALL';
-  if (!v || v === 'ALL') return recs;
-  return recs.filter(r => bedKey(r.bed) === v);
+// Senarai audit bertanda (checkbox): PICK[pre] = Set objek rekod yang ditanda; null = belum dibina
+const PICK = { report: null, ggReport: null, envReport: null };
+const PICK_SEEN = { report: new Set(), ggReport: new Set(), envReport: new Set() };
+function filterByBed(recs, pre){ // (nama lama dikekalkan) — tapis ikut audit yang ditanda
+  const sel = PICK[pre];
+  if (!sel) return recs;
+  return recs.filter(r => sel.has(r));
 }
 function bedSuffix(pre){
-  const sel = $(pre + 'BedFilter');
-  if (!sel || sel.value === 'ALL') return '';
-  const opt = sel.options[sel.selectedIndex];
-  return ' · Bilik/Katil ' + (opt ? opt.textContent : sel.value);
+  const sel = PICK[pre];
+  if (!sel) return '';
+  const all = periodRecsFor(pre);
+  const n = all.filter(r => sel.has(r)).length;
+  return n === all.length ? '' : ` · ${n} daripada ${all.length} audit dipilih`;
 }
-function refreshBedOptions(pre){
+function periodRecsFor(pre){
   const c = REPORT_CFG[pre];
-  const sel = $(pre + 'BedFilter');
-  if (!sel) return;
-  const prev = sel.value;
   let recs = reportWardRecs(pre);
   const mode = c.mode(), val = c.value();
-  if (mode !== 'all' && val) recs = recs.filter(r => ggPeriodKeyOf(r, mode) === val);
-  const map = new Map();
-  recs.forEach(r => { const k = bedKey(r.bed); if (k && !map.has(k)) map.set(k, String(r.bed).trim()); });
-  const keys = Array.from(map.keys()).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
-  sel.innerHTML = '<option value="ALL">Semua bilik / katil</option>' +
-    keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(map.get(k))}</option>`).join('');
-  sel.value = keys.includes(prev) ? prev : 'ALL';
+  if (mode !== 'all' && val){
+    recs = recs.filter(r => {
+      if (pre === 'report' && mode === 'epidweek'){
+        const ew = getEpidWeek(r.date);
+        return ew && `${ew.year}-EW${String(ew.week).padStart(2,'0')}` === val;
+      }
+      return ggPeriodKeyOf(r, mode) === val;
+    });
+  }
+  return recs.slice().sort((a, b) => String(normDate(b.date)).localeCompare(String(normDate(a.date))) ||
+    String(a.bed || '').localeCompare(String(b.bed || ''), undefined, {numeric: true}));
 }
+function pickRowInfo(pre, r){
+  const E = escapeHtml;
+  let pct, l2;
+  if (pre === 'report'){
+    pct = r.compliancePercent;
+    l2 = [r.ward + (r.discipline ? ' (' + r.discipline + ')' : ''), r.organism, r.auditor];
+  } else {
+    pct = pre === 'ggReport' ? r.cleanPercent : r.compliancePercent;
+    l2 = [r.ward, r.department, r.auditor];
+  }
+  if (r.status && String(r.status).toLowerCase() === 'draft') l2.push('DRAF');
+  const p = (pct === '' || pct === null || pct === undefined || isNaN(Number(pct))) ? null : Math.round(Number(pct) * 10) / 10;
+  return {
+    l1: `${fmtDMY(normDate(r.date))} · ${E(r.bed ? String(r.bed) : 'Tiada bilik/katil')}`,
+    l2: E(l2.filter(Boolean).join(' · ')),
+    pct: p
+  };
+}
+function updatePickCount(pre){
+  const all = periodRecsFor(pre);
+  const n = PICK[pre] ? all.filter(r => PICK[pre].has(r)).length : all.length;
+  $(pre + 'PickCount').textContent = `${n} / ${all.length} audit dipilih`;
+}
+function refreshBedOptions(pre){ // (nama lama dikekalkan) — bina semula senarai audit bertanda
+  const box = $(pre + 'AuditPick');
+  if (!box) return;
+  const recs = periodRecsFor(pre);
+  if (!PICK[pre]) PICK[pre] = new Set();
+  // audit yang baru muncul dalam senarai → ditanda secara lalai; yang pernah dinyahtanda kekal tidak ditanda
+  recs.forEach(r => { if (!PICK_SEEN[pre].has(r)){ PICK[pre].add(r); PICK_SEEN[pre].add(r); } });
+  if (!recs.length){
+    box.innerHTML = '<div class="apick-empty">Tiada audit untuk ward / tempoh ini.</div>';
+  } else {
+    box.innerHTML = recs.map((r, i) => {
+      const inf = pickRowInfo(pre, r);
+      return `<label class="apick-row"><input type="checkbox" data-i="${i}" ${PICK[pre].has(r) ? 'checked' : ''}>
+        <div><div class="a1">${inf.l1}</div><div class="a2">${inf.l2}</div></div>
+        <div class="apick-pct" style="color:${ipcPctColor(inf.pct)}">${inf.pct === null ? '' : inf.pct + '%'}</div></label>`;
+    }).join('');
+    box.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => {
+      const r = recs[+cb.dataset.i];
+      if (cb.checked) PICK[pre].add(r); else PICK[pre].delete(r);
+      updatePickCount(pre);
+    }));
+  }
+  updatePickCount(pre);
+}
+document.querySelectorAll('.apick-btn').forEach(b => b.addEventListener('click', () => {
+  const pre = b.dataset.pre;
+  if (!PICK[pre]) PICK[pre] = new Set();
+  const on = b.dataset.pick === 'all';
+  periodRecsFor(pre).forEach(r => on ? PICK[pre].add(r) : PICK[pre].delete(r));
+  $(pre + 'AuditPick').querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = on);
+  updatePickCount(pre);
+}));
 async function initReportFilters(tab){
   const pre = tab === 'report' ? 'report' : tab === 'ggreport' ? 'ggReport' : 'envReport';
   const c = REPORT_CFG[pre];
@@ -5568,8 +5658,8 @@ function buildIpcReportHtml(pre, recs){
   const wards = uniq(recs.map(r => r.ward + (r.discipline ? ' (' + r.discipline + ')' : '')));
   const wardLabel = wardSel === 'ALL' ? (wards.join(', ') || 'Semua ward') : (wards.length === 1 ? wards[0] : wardSel);
   const beds = uniq(recs.map(r => String(r.bed || '').trim()));
-  const bedSel = $(pre + 'BedFilter').value;
-  const bedLabel = bedSel !== 'ALL' ? beds.join(', ') : (beds.length ? (beds.length <= 8 ? beds.join(', ') : `${beds.length} bilik/katil`) : '—');
+  const bedSel = 'ALL';
+  const bedLabel = beds.length ? (beds.length <= 8 ? beds.join(', ') : `${beds.length} bilik/katil`) : '—';
   const auditors = uniq(recs.map(r => r.auditor));
   const verifiers = uniq(recs.map(r => r.verifiedBy));
   const depts = uniq(recs.map(r => r.department));
@@ -5716,32 +5806,49 @@ ${comments ? `<h3>Komen / Tindakan Juruaudit</h3><ul>${comments}</ul>` : ''}
 </div></body></html>`;
 }
 
+// Preview laporan dalam app (modal + iframe) sebelum cetak
+function ipcModal(){
+  let m = $('ipcPreviewModal');
+  if (m) return m;
+  m = document.createElement('div');
+  m.id = 'ipcPreviewModal'; m.className = 'ipc-modal';
+  m.innerHTML = `<div class="ipc-modal-bar"><b>Preview Laporan Penemuan</b>
+      <button type="button" id="ipcPrintBtn" style="background:#137a46;color:#fff;">🖨️ Cetak / Simpan PDF</button>
+      <button type="button" id="ipcTabBtn" style="background:#eee;color:#222;">↗ Buka tab baharu</button>
+      <button type="button" id="ipcCloseBtn" style="background:#B3402F;color:#fff;">✕ Tutup</button></div>
+    <iframe id="ipcPreviewFrame" title="Preview laporan"></iframe>`;
+  document.body.appendChild(m);
+  $('ipcCloseBtn').onclick = () => { m.classList.remove('show'); document.body.style.overflow = ''; };
+  $('ipcPrintBtn').onclick = () => {
+    const f = $('ipcPreviewFrame');
+    try { f.contentWindow.focus(); f.contentWindow.print(); } catch(e){ $('ipcTabBtn').click(); }
+  };
+  $('ipcTabBtn').onclick = () => {
+    const url = URL.createObjectURL(new Blob([m._html || ''], {type: 'text/html'}));
+    const w = window.open(url, '_blank');
+    if (!w){
+      const a = document.createElement('a'); a.href = url; a.download = 'Laporan_Penemuan.html';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+  };
+  return m;
+}
 function openIpcReport(pre){
   const btn = $(pre + 'IpcBtn');
-  // buka tetingkap serta-merta (elak popup blocker), isi kemudian
-  const w = window.open('', '_blank');
-  if (w){ try { w.document.write('<p style="font-family:sans-serif;padding:20px;">Menjana laporan…</p>'); } catch(e){} }
   const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Menjana...';
+  btn.disabled = true; btn.textContent = 'Menjana preview...';
   (async () => {
     const c = REPORT_CFG[pre];
-    if (!(c.recs() || []).length){ try { await c.load(); } catch(e){} }
+    if (!(c.recs() || []).length){ try { await c.load(); } catch(e){} refreshBedOptions(pre); }
     const recs = pre === 'report' ? reportFilteredRecords() : pre === 'ggReport' ? ggReportFilteredRecords() : envReportFilteredRecords();
-    if (!recs.length){
-      if (w) w.close();
-      showToast('Tiada audit untuk pilihan ward / tarikh / bilik ini', true);
-      return;
-    }
-    const html = buildIpcReportHtml(pre, recs);
-    const url = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
-    if (w){ w.location.href = url; }
-    else {
-      const a = document.createElement('a');
-      a.href = url; a.download = 'Laporan_Penemuan_' + ($(c.ward).value) + '.html';
-      document.body.appendChild(a); a.click(); a.remove();
-      showToast('Popup disekat — laporan dimuat turun sebagai fail HTML');
-    }
-  })().catch(err => { if (w) w.close(); showToast('Gagal jana laporan: ' + err.message, true); })
+    if (!recs.length){ showToast('Sila tanda sekurang-kurangnya satu audit', true); return; }
+    const full = buildIpcReportHtml(pre, recs);
+    const m = ipcModal();
+    m._html = full;                                                   // versi tab baharu (ada butang cetak sendiri)
+    $('ipcPreviewFrame').srcdoc = full.replace('<div class="bar">', '<div class="bar" style="display:none">');
+    m.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  })().catch(err => showToast('Gagal jana laporan: ' + err.message, true))
      .finally(() => { btn.disabled = false; btn.textContent = orig; });
 }
 ['report', 'ggReport', 'envReport'].forEach(pre => $(pre + 'IpcBtn').addEventListener('click', () => openIpcReport(pre)));
