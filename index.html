@@ -826,11 +826,17 @@ body.gate-open{overflow:hidden;}
           <button type="button" class="plain active" data-mode="all">Semua</button>
           <button type="button" class="plain" data-mode="month">Bulan</button>
           <button type="button" class="plain" data-mode="epidweek">Minggu Epid</button>
+          <button type="button" class="plain" data-mode="date">Tarikh</button>
         </div>
       </div>
       <div class="field" id="reportPeriodValueWrap" style="display:none;">
         <label id="reportPeriodValueLabel" for="reportPeriodValueSelect">Pilih bulan</label>
         <select id="reportPeriodValueSelect"></select>
+      </div>
+      <div class="field">
+        <label for="reportBedFilter">Bilik / Katil</label>
+        <select id="reportBedFilter"><option value="ALL">Semua bilik / katil</option></select>
+        <div class="dash-note" style="margin-top:4px;">Senarai bilik/katil ikut ward &amp; tempoh yang dipilih.</div>
       </div>
       <button class="submit-btn" id="generateReportBtn">Jana Laporan</button>
     </div>
@@ -850,6 +856,7 @@ body.gate-open{overflow:hidden;}
         </div>
         <button class="ghost-btn no-print" id="printReportBtn">Cetak / Simpan PDF</button>
         <button class="ghost-btn no-print" id="downloadWordBtn">Muat turun Word (.doc)</button>
+        <button class="submit-btn no-print" id="reportIpcBtn" style="margin-top:8px;">📋 Laporan Penemuan + Gambar (format IPC Round)</button>
       </div>
       <div class="card">
         <h2>Pematuhan mengikut soalan</h2>
@@ -1072,11 +1079,17 @@ body.gate-open{overflow:hidden;}
           <button type="button" class="plain active" data-mode="all">Semua</button>
           <button type="button" class="plain" data-mode="month">Bulan</button>
           <button type="button" class="plain" data-mode="epidweek">Minggu Epid</button>
+          <button type="button" class="plain" data-mode="date">Tarikh</button>
         </div>
       </div>
       <div class="field" id="ggReportPeriodValueWrap" style="display:none;">
         <label id="ggReportPeriodValueLabel" for="ggReportPeriodValueSelect">Pilih bulan</label>
         <select id="ggReportPeriodValueSelect"></select>
+      </div>
+      <div class="field">
+        <label for="ggReportBedFilter">Bilik / Katil</label>
+        <select id="ggReportBedFilter"><option value="ALL">Semua bilik / katil</option></select>
+        <div class="dash-note" style="margin-top:4px;">Senarai bilik/katil ikut ward &amp; tempoh yang dipilih.</div>
       </div>
       <button class="submit-btn" id="ggGenerateReportBtn">Jana Laporan</button>
     </div>
@@ -1096,6 +1109,7 @@ body.gate-open{overflow:hidden;}
         </div>
         <button class="ghost-btn no-print" id="ggPrintReportBtn">Cetak / Simpan PDF (gambar penuh)</button>
         <button class="ghost-btn no-print" id="ggDownloadWordBtn">Muat turun Word (.doc)</button>
+        <button class="submit-btn no-print" id="ggReportIpcBtn" style="margin-top:8px;">📋 Laporan Penemuan + Gambar (format IPC Round)</button>
       </div>
       <div class="card">
         <h2>Kebersihan mengikut Bahagian</h2>
@@ -1312,11 +1326,17 @@ body.gate-open{overflow:hidden;}
           <button type="button" class="plain active" data-mode="all">Semua</button>
           <button type="button" class="plain" data-mode="month">Bulan</button>
           <button type="button" class="plain" data-mode="epidweek">Minggu Epid</button>
+          <button type="button" class="plain" data-mode="date">Tarikh</button>
         </div>
       </div>
       <div class="field" id="envReportPeriodValueWrap" style="display:none;">
         <label id="envReportPeriodValueLabel" for="envReportPeriodValueSelect">Pilih bulan</label>
         <select id="envReportPeriodValueSelect"></select>
+      </div>
+      <div class="field">
+        <label for="envReportBedFilter">Bilik / Katil</label>
+        <select id="envReportBedFilter"><option value="ALL">Semua bilik / katil</option></select>
+        <div class="dash-note" style="margin-top:4px;">Senarai bilik/katil ikut ward &amp; tempoh yang dipilih.</div>
       </div>
       <button class="submit-btn" id="envGenerateReportBtn">Jana Laporan</button>
     </div>
@@ -1335,6 +1355,7 @@ body.gate-open{overflow:hidden;}
           </div>
         </div>
         <button class="ghost-btn no-print" id="envDownloadWordBtn">Muat turun Word (.doc)</button>
+        <button class="submit-btn no-print" id="envReportIpcBtn" style="margin-top:8px;">📋 Laporan Penemuan + Gambar (format IPC Round)</button>
       </div>
       <div class="card">
         <h2>Pematuhan mengikut Bahagian</h2>
@@ -1513,9 +1534,13 @@ const CRITERIA = [
     ] },
   { title: "Penggunaan Mandian Harian (Chlorhexidine 4% Bath / 2% Wipes / Octenisan Wash)",
     items: [
-      "Tersedia",
-      "Penggunaan yang betul",
-      "Tunjuk ajar diberikan kepada pesakit"
+      { text: "Wipe tersedia untuk kegunaan pesakit MDRO bedbound", allowNA: true },
+      { text: "Pesakit MDRO yang ambulatory dikenal pasti diberikan antiseptic bathing", allowNA: true },
+      "Wipe digunakan kepada pesakit mengikut protokol",
+      "Wipe direkodkan dalam dokumentasi kejururawatan/BHT",
+      "Staf mengetahui langkah berjaga-jaga & kontraindikasi penggunaan wipe",
+      { text: "Wipe diberikan kepada penjaga dengan penjelasan yang jelas oleh staf", allowNA: true },
+      "Staf pernah mendapat latihan/micro teaching tentang penggunaan CHG 2% wipe oleh Ward Link Nurse atau ICN"
     ],
     comp: [
       "Adakah staff faham tujuan mandian chlorhexidine/octenisan untuk pesakit MDRO?",
@@ -2294,6 +2319,11 @@ function loadDraftIntoForm(d){
   syncOrganismChips();
   subAnswers = d.subAnswers || CRITERIA.map(c => new Array(c.items.length).fill(null));
   subPhotos = d.subPhotos || CRITERIA.map(c => c.items.map(() => []));
+  // Draf lama: jika bilangan item kategori berubah (cth soalan CHG baharu), kosongkan kategori itu
+  CRITERIA.forEach((c, ci) => {
+    if (!Array.isArray(subAnswers[ci]) || subAnswers[ci].length !== c.items.length) subAnswers[ci] = new Array(c.items.length).fill(null);
+    if (!Array.isArray(subPhotos[ci]) || subPhotos[ci].length !== c.items.length) subPhotos[ci] = c.items.map(() => []);
+  });
   remarks = d.remarks || new Array(CRITERIA.length).fill('');
   followUps = d.followUps || CRITERIA.map(() => ({ training: null, comp: [null,null,null] }));
   isolationType = d.isolationType || null;
@@ -2366,6 +2396,7 @@ function switchTab(tab){
   if (tab === 'dashboard'){ loadDashboard(); loadCleanerDashboard(); loadSharedDrafts().then(renderLocalDrafts); }
   if (tab === 'ggdash'){ loadGgDashboard(); loadSharedDrafts().then(renderGgDrafts); }
   if (tab === 'envdash'){ loadEnvDashboard(); loadSharedDrafts().then(renderEnvDrafts); }
+  if (tab === 'report' || tab === 'ggreport' || tab === 'envreport') initReportFilters(tab);
 }
 const LIST_LIMIT = {mdro:15, gg:15, env:15};
 // Togol Lengkap / Pending dalam Senarai Entry
@@ -2777,6 +2808,8 @@ function loadServerDraftIntoForm(r){
       comp: Array.isArray(cat.comp) ? cat.comp.slice(0,3) : [null,null,null]
     };
     if (cat.isolationType) isolationType = cat.isolationType;
+    // Rekod lama dengan set soalan berbeza (cth CHG 3 item -> 7 item): jangan petakan jawapan ikut indeks
+    if ((cat.items || []).length && cat.items.length !== CRITERIA[ci].items.length) return;
     (cat.items || []).forEach((it, ii) => {
       if (ii >= CRITERIA[ci].items.length) return;
       subAnswers[ci][ii] = it.answer || null;
@@ -2914,6 +2947,14 @@ function refreshReportPeriodOptions(){
       select.appendChild(opt);
     });
     if (weeks.length) reportPeriodValue = weeks[0];
+  } else if (reportPeriodMode === 'date'){
+    const dates = Array.from(new Set(reportWardRecs('report').map(r => normDate(r.date)).filter(Boolean))).sort().reverse();
+    dates.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d; opt.textContent = fmtDMY(d);
+      select.appendChild(opt);
+    });
+    reportPeriodValue = dates.length ? dates[0] : '';
   }
   select.value = reportPeriodValue;
 }
@@ -2930,7 +2971,7 @@ $('reportPeriodModeSeg').addEventListener('click', e => {
     reportPeriodValue = '';
   } else {
     wrap.style.display = 'block';
-    $('reportPeriodValueLabel').textContent = reportPeriodMode === 'month' ? 'Pilih bulan' : 'Pilih minggu epid';
+    $('reportPeriodValueLabel').textContent = reportPeriodMode === 'month' ? 'Pilih bulan' : reportPeriodMode === 'date' ? 'Pilih tarikh audit' : 'Pilih minggu epid';
     refreshReportPeriodOptions();
     if (!lastRecords.length) loadDashboard().then(refreshReportPeriodOptions);
   }
@@ -2950,8 +2991,10 @@ function reportFilteredRecords(){
       const ew = getEpidWeek(r.date);
       return ew && `${ew.year}-EW${String(ew.week).padStart(2,'0')}` === reportPeriodValue;
     });
+  } else if (reportPeriodMode === 'date' && reportPeriodValue){
+    records = records.filter(r => normDate(r.date) === reportPeriodValue);
   }
-  return records;
+  return filterByBed(records, 'report');
 }
 
 function buildFindingCard(r){
@@ -2994,7 +3037,10 @@ function renderReport(records){
     periodLabel = MONTH_NAMES_MS[(+mo)-1] + ' ' + y;
   } else if (reportPeriodMode === 'epidweek' && reportPeriodValue){
     periodLabel = reportPeriodValue.replace('-', ' ');
+  } else if (reportPeriodMode === 'date' && reportPeriodValue){
+    periodLabel = 'Tarikh ' + fmtDMY(reportPeriodValue);
   }
+  periodLabel += bedSuffix('report');
   $('reportTitle').textContent = `Laporan Audit MDRO — ${wardLabel} · ${periodLabel}`;
 
   let sum = 0, count = 0;
@@ -3152,7 +3198,10 @@ function buildReportWordHtml(records, stats, photoMap){
     periodLabel = MONTH_NAMES_MS[(+mo)-1] + ' ' + y;
   } else if (reportPeriodMode === 'epidweek' && reportPeriodValue){
     periodLabel = reportPeriodValue.replace('-', ' ');
+  } else if (reportPeriodMode === 'date' && reportPeriodValue){
+    periodLabel = 'Tarikh ' + fmtDMY(reportPeriodValue);
   }
+  periodLabel += bedSuffix('report');
   let sum = 0, count = 0;
   records.forEach(r => { const p = Number(r.compliancePercent); if (!isNaN(p)){ sum += p; count++; } });
   const overallPct = count ? Math.round(sum / count) : null;
@@ -4145,6 +4194,7 @@ let ggPeriodMode = 'all', ggPeriodValue = '';
 const MONTH_SHORT_MS = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
 
 function ggPeriodKeyOf(r, mode){
+  if (mode === 'date') return normDate(r.date) || '';
   if (mode === 'month') return (r.date || '').slice(0,7);
   if (mode === 'epidweek'){
     const ew = getEpidWeek(r.date);
@@ -4166,11 +4216,14 @@ function ggFilteredRecords(){
 function ggRefreshPeriodOptions(selectId, mode, setValue){
   const select = $(selectId);
   select.innerHTML = '';
-  const keys = Array.from(new Set(ggRecords.map(r => ggPeriodKeyOf(r, mode)).filter(k => mode !== 'month' || /^\d{4}-\d{2}$/.test(k)))).sort().reverse();
+  const srcRecs = selectId === 'ggReportPeriodValueSelect' ? reportWardRecs('ggReport') : ggRecords;
+  const keys = Array.from(new Set(srcRecs.map(r => ggPeriodKeyOf(r, mode)).filter(k => k && (mode !== 'month' || /^\d{4}-\d{2}$/.test(k))))).sort().reverse();
   keys.forEach(k => {
     const opt = document.createElement('option');
     opt.value = k;
-    if (mode === 'month'){
+    if (mode === 'date'){
+      opt.textContent = fmtDMY(k);
+    } else if (mode === 'month'){
       const [y, mo] = k.split('-');
       opt.textContent = MONTH_NAMES_MS[(+mo)-1] + ' ' + y;
     } else {
@@ -4323,7 +4376,7 @@ $('ggReportPeriodModeSeg').addEventListener('click', e => {
   if (ggReportPeriodMode === 'all'){ wrap.style.display = 'none'; ggReportPeriodValue = ''; }
   else {
     wrap.style.display = 'block';
-    $('ggReportPeriodValueLabel').textContent = ggReportPeriodMode === 'month' ? 'Pilih bulan' : 'Pilih minggu epid';
+    $('ggReportPeriodValueLabel').textContent = ggReportPeriodMode === 'month' ? 'Pilih bulan' : ggReportPeriodMode === 'date' ? 'Pilih tarikh audit' : 'Pilih minggu epid';
     ggRefreshPeriodOptions('ggReportPeriodValueSelect', ggReportPeriodMode, v => ggReportPeriodValue = v);
   }
 });
@@ -4336,7 +4389,7 @@ function ggReportFilteredRecords(){
   if (ggReportPeriodMode !== 'all' && ggReportPeriodValue){
     recs = recs.filter(r => ggPeriodKeyOf(r, ggReportPeriodMode) === ggReportPeriodValue);
   }
-  return recs;
+  return filterByBed(recs, 'ggReport');
 }
 
 function ggSectionStats(records){
@@ -4362,6 +4415,7 @@ function ggPeriodLabel(mode, value){
     return MONTH_NAMES_MS[(+mo)-1] + ' ' + y;
   }
   if (mode === 'epidweek' && value) return value.replace('-', ' ');
+  if (mode === 'date' && value) return 'Tarikh ' + fmtDMY(value);
   return 'Semua tempoh';
 }
 
@@ -4371,7 +4425,7 @@ $('ggGenerateReportBtn').addEventListener('click', async () => {
   if (!ggRecords.length) await loadGgDashboard();
   const recs = ggReportFilteredRecords();
   const wardLabel = $('ggReportWardFilter').value === 'ALL' ? 'Semua Ward' : $('ggReportWardFilter').value;
-  const periodLabel = ggPeriodLabel(ggReportPeriodMode, ggReportPeriodValue);
+  const periodLabel = ggPeriodLabel(ggReportPeriodMode, ggReportPeriodValue) + bedSuffix('ggReport');
   $('ggReportTitle').textContent = `Laporan Audit Glo Germ — ${wardLabel} · ${periodLabel}`;
 
   const s = recs.reduce((acc, r) => {
@@ -4434,7 +4488,7 @@ $('ggDownloadWordBtn').addEventListener('click', async () => {
   const photoMap = await fetchPhotosBase64(fileIds);
 
   const wardLabel = $('ggReportWardFilter').value === 'ALL' ? 'Semua Ward' : $('ggReportWardFilter').value;
-  const periodLabel = ggPeriodLabel(ggReportPeriodMode, ggReportPeriodValue);
+  const periodLabel = ggPeriodLabel(ggReportPeriodMode, ggReportPeriodValue) + bedSuffix('ggReport');
   const stats = ggSectionStats(recs);
   const s = recs.reduce((acc, r) => {
     const st = ggItemStats(r.sections);
@@ -4920,6 +4974,7 @@ $('envSubmitBtn').addEventListener('click', async () => {
 // ---- Dashboard ----
 let envPeriodMode = 'all', envPeriodValue = '';
 function envPeriodKeyOf(r, mode){
+  if (mode === 'date') return normDate(r.date) || '';
   if (mode === 'month') return (r.date || '').slice(0,7);
   if (mode === 'epidweek'){
     const ew = getEpidWeek(r.date);
@@ -4930,11 +4985,13 @@ function envPeriodKeyOf(r, mode){
 function envRefreshPeriodOptions(selectId, mode, setValue){
   const select = $(selectId);
   select.innerHTML = '';
-  const keys = Array.from(new Set(envRecords.map(r => envPeriodKeyOf(r, mode)).filter(k => mode !== 'month' || /^\d{4}-\d{2}$/.test(k)))).sort().reverse();
+  const srcRecs = selectId === 'envReportPeriodValueSelect' ? reportWardRecs('envReport') : envRecords;
+  const keys = Array.from(new Set(srcRecs.map(r => envPeriodKeyOf(r, mode)).filter(k => k && (mode !== 'month' || /^\d{4}-\d{2}$/.test(k))))).sort().reverse();
   keys.forEach(k => {
     const opt = document.createElement('option');
     opt.value = k;
-    if (mode === 'month'){ const [y, mo] = k.split('-'); opt.textContent = MONTH_NAMES_MS[(+mo)-1] + ' ' + y; }
+    if (mode === 'date') opt.textContent = fmtDMY(k);
+    else if (mode === 'month'){ const [y, mo] = k.split('-'); opt.textContent = MONTH_NAMES_MS[(+mo)-1] + ' ' + y; }
     else opt.textContent = k.replace('-', ' ');
     select.appendChild(opt);
   });
@@ -5097,7 +5154,7 @@ $('envReportPeriodModeSeg').addEventListener('click', e => {
   if (envReportPeriodMode === 'all'){ wrap.style.display = 'none'; envReportPeriodValue = ''; }
   else {
     wrap.style.display = 'block';
-    $('envReportPeriodValueLabel').textContent = envReportPeriodMode === 'month' ? 'Pilih bulan' : 'Pilih minggu epid';
+    $('envReportPeriodValueLabel').textContent = envReportPeriodMode === 'month' ? 'Pilih bulan' : envReportPeriodMode === 'date' ? 'Pilih tarikh audit' : 'Pilih minggu epid';
     envRefreshPeriodOptions('envReportPeriodValueSelect', envReportPeriodMode, v => envReportPeriodValue = v);
   }
 });
@@ -5108,7 +5165,7 @@ function envReportFilteredRecords(){
   const w = $('envReportWardFilter').value;
   if (w !== 'ALL') recs = recs.filter(r => r.ward === w);
   if (envReportPeriodMode !== 'all' && envReportPeriodValue) recs = recs.filter(r => envPeriodKeyOf(r, envReportPeriodMode) === envReportPeriodValue);
-  return recs;
+  return filterByBed(recs, 'envReport');
 }
 
 $('envGenerateReportBtn').addEventListener('click', async () => {
@@ -5117,7 +5174,7 @@ $('envGenerateReportBtn').addEventListener('click', async () => {
   if (!envRecords.length) await loadEnvDashboard();
   const recs = envReportFilteredRecords();
   const wardLabel = $('envReportWardFilter').value === 'ALL' ? 'Semua Ward' : $('envReportWardFilter').value;
-  const periodLabel = ggPeriodLabel(envReportPeriodMode, envReportPeriodValue);
+  const periodLabel = ggPeriodLabel(envReportPeriodMode, envReportPeriodValue) + bedSuffix('envReport');
   $('envReportTitle').textContent = `Laporan Environment Visual Audit — ${wardLabel} · ${periodLabel}`;
 
   const s = recs.reduce((acc, r) => {
@@ -5172,7 +5229,7 @@ $('envDownloadWordBtn').addEventListener('click', async () => {
   const photoMap = await fetchPhotosBase64(fileIds);
 
   const wardLabel = $('envReportWardFilter').value === 'ALL' ? 'Semua Ward' : $('envReportWardFilter').value;
-  const periodLabel = ggPeriodLabel(envReportPeriodMode, envReportPeriodValue);
+  const periodLabel = ggPeriodLabel(envReportPeriodMode, envReportPeriodValue) + bedSuffix('envReport');
   const stats = envSectionStats(recs);
   const s = recs.reduce((acc, r) => {
     const st = envItemStats(r.sections);
@@ -5302,6 +5359,393 @@ $('envFeedbackSubmitBtn').addEventListener('click', async () => {
 
 // ---- Perlindungan kerja belum disimpan ----
 // Amaran sebelum keluar/refresh, dan auto-simpan draf supaya kerja tidak hilang.
+// =====================================================================
+// LAPORAN PENEMUAN (format IPC Round) + penapis Tarikh & Bilik/Katil
+// Dikongsi oleh 3 modul: MDRO ('report'), Glo Germ ('ggReport'), Environment ('envReport')
+// =====================================================================
+function fmtDMY(iso){
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(iso || '');
+}
+function bedKey(b){ return String(b || '').trim().toUpperCase(); }
+
+const REPORT_CFG = {
+  report:    { recs: () => lastRecords, load: () => loadDashboard(),    ward: 'reportWardFilter',
+               mode: () => reportPeriodMode,    value: () => reportPeriodValue,
+               refreshPeriod: () => refreshReportPeriodOptions() },
+  ggReport:  { recs: () => ggRecords,   load: () => loadGgDashboard(),  ward: 'ggReportWardFilter',
+               mode: () => ggReportPeriodMode,  value: () => ggReportPeriodValue,
+               refreshPeriod: () => ggRefreshPeriodOptions('ggReportPeriodValueSelect', ggReportPeriodMode, v => ggReportPeriodValue = v) },
+  envReport: { recs: () => envRecords,  load: () => loadEnvDashboard(), ward: 'envReportWardFilter',
+               mode: () => envReportPeriodMode, value: () => envReportPeriodValue,
+               refreshPeriod: () => envRefreshPeriodOptions('envReportPeriodValueSelect', envReportPeriodMode, v => envReportPeriodValue = v) }
+};
+
+function reportWardRecs(pre){
+  const c = REPORT_CFG[pre];
+  const w = $(c.ward).value;
+  const recs = c.recs() || [];
+  return w === 'ALL' ? recs : recs.filter(r => r.ward === w);
+}
+function filterByBed(recs, pre){
+  const sel = $(pre + 'BedFilter');
+  const v = sel ? sel.value : 'ALL';
+  if (!v || v === 'ALL') return recs;
+  return recs.filter(r => bedKey(r.bed) === v);
+}
+function bedSuffix(pre){
+  const sel = $(pre + 'BedFilter');
+  if (!sel || sel.value === 'ALL') return '';
+  const opt = sel.options[sel.selectedIndex];
+  return ' · Bilik/Katil ' + (opt ? opt.textContent : sel.value);
+}
+function refreshBedOptions(pre){
+  const c = REPORT_CFG[pre];
+  const sel = $(pre + 'BedFilter');
+  if (!sel) return;
+  const prev = sel.value;
+  let recs = reportWardRecs(pre);
+  const mode = c.mode(), val = c.value();
+  if (mode !== 'all' && val) recs = recs.filter(r => ggPeriodKeyOf(r, mode) === val);
+  const map = new Map();
+  recs.forEach(r => { const k = bedKey(r.bed); if (k && !map.has(k)) map.set(k, String(r.bed).trim()); });
+  const keys = Array.from(map.keys()).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+  sel.innerHTML = '<option value="ALL">Semua bilik / katil</option>' +
+    keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(map.get(k))}</option>`).join('');
+  sel.value = keys.includes(prev) ? prev : 'ALL';
+}
+async function initReportFilters(tab){
+  const pre = tab === 'report' ? 'report' : tab === 'ggreport' ? 'ggReport' : 'envReport';
+  const c = REPORT_CFG[pre];
+  if (!(c.recs() || []).length){ try { await c.load(); } catch(e){} }
+  if (c.mode() !== 'all') c.refreshPeriod();
+  refreshBedOptions(pre);
+}
+Object.keys(REPORT_CFG).forEach(pre => {
+  const c = REPORT_CFG[pre];
+  $(c.ward).addEventListener('change', () => { if (c.mode() !== 'all') c.refreshPeriod(); refreshBedOptions(pre); });
+  // pendengar ini didaftar selepas pendengar asal, jadi mod/nilai tempoh sudah dikemas kini
+  $(pre + 'PeriodModeSeg').addEventListener('click', e => { if (e.target.closest('button[data-mode]')) refreshBedOptions(pre); });
+  $(pre + 'PeriodValueSelect').addEventListener('change', () => refreshBedOptions(pre));
+});
+
+// ---------- Saranan ----------
+const MDRO_SARANAN = {
+  "0|Borang MDRO checklist terdapat dalam BHT di nursing cardex": "Pastikan borang MDRO checklist diletakkan dalam BHT/nursing cardex sebaik pesakit disahkan MDRO.",
+  "0|Borang MDRO checklist diisi dengan lengkap": "Pastikan borang MDRO checklist diisi dengan lengkap dan dikemas kini.",
+  "1|Penempatan pesakit diasingkan (bilik isolasi/kohort)": "Pastikan pesakit MDRO ditempatkan di bilik isolasi atau secara kohort.",
+  "1|Jarak 1.5m antara katil": "Pastikan jarak sekurang-kurangnya 1.5m antara katil.",
+  "1|Langsir tidak menyentuh katil": "Pastikan langsir tidak menyentuh katil pesakit.",
+  "1|Kabinet/meja kardiak tidak menyentuh/berkongsi dengan persekitaran lain": "Pastikan kabinet/meja kardiak khusus untuk pesakit dan tidak berkongsi dengan persekitaran lain.",
+  "1|Persekitaran katil bersih": "Pastikan persekitaran katil dibersihkan dan dinyahkuman mengikut SOP pembersihan.",
+  "2|Papan tanda yang betul mengikut cara penularan": "Pastikan signage yang betul mengikut cara penularan (contact/droplet/airborne) dipamerkan.",
+  "2|Signage jelas/boleh dilihat": "Pastikan signage dipamerkan di lokasi yang jelas dilihat.",
+  "2|Signage standard digunakan": "Pastikan signage standard digunakan.",
+  "2|HCW sedar tentang papan tanda": "Beri taklimat kepada HCW tentang maksud signage dan langkah pencegahan yang perlu diambil.",
+  "3|ABHR dalam bracket di meja kardiak/katil": "Pastikan ABHR diletakkan dalam bracket di meja kardiak/katil (point of care).",
+  "3|ABHR tidak kosong": "Pastikan ABHR diisi semula/ditukar sebelum habis.",
+  "3|ABHR berfungsi": "Pastikan dispenser ABHR berfungsi; ganti jika rosak.",
+  "3|Botol ABHR bersih": "Pastikan botol ABHR bersih.",
+  "3|Ada tarikh buka pada botol ABHR": "Pastikan tarikh buka ditulis pada botol ABHR.",
+  "4|Lokasi troli/kabinet PPE betul": "Pastikan troli/kabinet PPE diletakkan di lokasi yang betul (pintu masuk zon pesakit).",
+  "4|Item lengkap dalam troli (Glove/ABHR/Gown/Wipe/N95/dll)": "Pastikan item PPE dalam troli lengkap mengikut jenis isolasi.",
+  "4|Troli PPE tersedia & bersih": "Pastikan troli PPE tersedia dan bersih.",
+  "4|Troli tidak kotor": "Pastikan troli PPE dibersihkan secara berkala.",
+  "4|Tiada item tidak berkaitan dalam troli": "Pastikan tiada item yang tidak berkaitan disimpan dalam troli PPE.",
+  "5|Nyahkuman dilakukan selepas setiap penggunaan": "Pastikan peralatan perubatan dinyahkuman selepas setiap penggunaan.",
+  "5|Ketersediaan peralatan perubatan khusus untuk pesakit": "Sediakan peralatan perubatan khusus (dedicated) untuk pesakit MDRO.",
+  "6|Tersedia di zon pesakit": "Pastikan tong sisa klinikal disediakan di zon pesakit untuk doffing PPE.",
+  "6|Tidak melebihi ¾ penuh": "Pastikan tong sisa klinikal dikosongkan sebelum melebihi ¾ penuh.",
+  "6|Bersih": "Pastikan tong sisa klinikal bersih.",
+  "6|Berfungsi": "Pastikan tong sisa klinikal berfungsi dengan baik.",
+  "6|Dilapik dengan plastik biohazard": "Pastikan tong sisa klinikal dilapik dengan plastik biohazard.",
+  "7|Tersedia": "Pastikan tag MDRO diletakkan pada BHT, surat rujukan dan nota discaj.",
+  "7|Jelas/boleh dilihat": "Pastikan tag MDRO jelas dan boleh dilihat.",
+  "7|Cop yang betul": "Pastikan cop/tag yang betul digunakan.",
+  "8|Wipe tersedia untuk kegunaan pesakit MDRO bedbound": "Pastikan CHG 2% wipe tersedia untuk pesakit MDRO bedbound.",
+  "8|Pesakit MDRO yang ambulatory dikenal pasti diberikan antiseptic bathing": "Kenal pasti pesakit MDRO ambulatory dan berikan antiseptic bathing.",
+  "8|Wipe digunakan kepada pesakit mengikut protokol": "Pastikan wipe digunakan kepada pesakit mengikut protokol.",
+  "8|Wipe direkodkan dalam dokumentasi kejururawatan/BHT": "Pastikan penggunaan wipe direkodkan dalam dokumentasi kejururawatan/BHT.",
+  "8|Staf mengetahui langkah berjaga-jaga & kontraindikasi penggunaan wipe": "Beri pendedahan kepada staf tentang langkah berjaga-jaga & kontraindikasi penggunaan wipe.",
+  "8|Wipe diberikan kepada penjaga dengan penjelasan yang jelas oleh staf": "Pastikan staf memberi penjelasan yang jelas sebelum wipe diberikan kepada penjaga.",
+  "8|Staf pernah mendapat latihan/micro teaching tentang penggunaan CHG 2% wipe oleh Ward Link Nurse atau ICN": "Atur latihan/micro teaching penggunaan CHG 2% wipe oleh Ward Link Nurse atau ICN.",
+  "9|Pesakit dimaklumkan (kes jangkitan, kebersihan diri, hadkan pergerakan)": "Pastikan pesakit/penjaga dimaklumkan tentang jangkitan, kebersihan diri dan had pergerakan.",
+  "9|Risalah diberikan (risalah CRE)": "Pastikan risalah CRE diberikan kepada pesakit/penjaga."
+};
+function mdroSaranan(ci, text){
+  return MDRO_SARANAN[ci + '|' + text] || ('Pastikan ' + (text || '').charAt(0).toLowerCase() + (text || '').slice(1) + '.');
+}
+function ggSaranan(part, text){
+  const who = /NURSE/i.test(part || '') ? 'jururawat/staf' : 'cleaner';
+  return `Pastikan ${text.replace(/\*$/, '')} dibersihkan dengan teknik yang betul mengikut SOP (tanggungjawab ${who}).`;
+}
+function envSaranan(text){
+  const t = String(text || '');
+  const plain = t.replace(/^\d+(\.\d+)?[a-z]?\s+/i, '');
+  if (/Bekalan mencukupi\s*—\s*(.+)/i.test(t)) return 'Pastikan bekalan ' + t.match(/—\s*(.+)/)[1] + ' mencukupi.';
+  if (/^1\.2/.test(t)) return 'Pastikan sharps container ditukar sebelum melebihi ¾ penuh.';
+  if (/^1\.3/.test(t)) return 'Pastikan sisa dan linen kotor dikeluarkan dengan segera.';
+  return `Pastikan ${plain} bersih, bebas habuk/kotoran dan dalam keadaan baik.`;
+}
+
+// ---------- Normalisasi rekod -> {sections, rows} ----------
+function normalizeForIpc(pre, recs){
+  const sections = []; const secIdx = {};
+  const addSec = (key, label, short, part) => {
+    if (secIdx[key] === undefined){ secIdx[key] = sections.length; sections.push({key, label, short, part: part || ''}); }
+  };
+  const rows = []; // {key, rec, text, st:'ok'|'bad'|'na', remark, photos, saranan}
+  const notes = []; // {key, rec, text}  catatan peringkat kategori
+  if (pre === 'report'){
+    CRITERIA.forEach((c, i) => addSec('c' + i, `${i+1}. ${c.title}`, 'K' + (i+1)));
+    recs.forEach(r => (r.categories || []).forEach((cat, ci) => {
+      if (!cat || !(cat.items || []).length) return;
+      const key = 'c' + ci;
+      addSec(key, `${ci+1}. ${cat.title || ''}`, 'K' + (ci+1));
+      cat.items.forEach(it => {
+        const v = (it.answer || '').toString().toLowerCase();
+        rows.push({key, rec: r, text: it.text || '', st: v === 'yes' ? 'ok' : v === 'no' ? 'bad' : 'na',
+          remark: '', photos: it.photos || [], saranan: mdroSaranan(ci, it.text || '')});
+      });
+      if (cat.remark) notes.push({key, rec: r, text: cat.remark});
+    }));
+  } else if (pre === 'ggReport'){
+    GG_SECTIONS.forEach((s, i) => addSec(s.group, s.group, 'G' + (i+1), s.part));
+    recs.forEach(r => (r.sections || []).forEach(sec => {
+      if (!sec || !(sec.items || []).length) return;
+      addSec(sec.group, sec.group, 'G' + (sections.length + 1), sec.part);
+      sec.items.forEach(it => {
+        const v = (it.answer || '').toString().toLowerCase();
+        rows.push({key: sec.group, rec: r, text: it.text || '', st: v === 'clean' ? 'ok' : v === 'notclean' ? 'bad' : 'na',
+          remark: it.remark ? 'Dicalit di: ' + it.remark : '', photos: it.photos || [],
+          saranan: ggSaranan(sec.part, it.text || '')});
+      });
+    }));
+  } else {
+    ENV_SECTIONS.forEach((s, i) => addSec(s.group, s.group, 'S' + (i+1)));
+    recs.forEach(r => (r.sections || []).forEach(sec => {
+      if (!sec || !(sec.items || []).length) return;
+      addSec(sec.group, sec.group, 'S' + (sections.length + 1));
+      sec.items.forEach(it => {
+        const v = (it.answer || '').toString().toLowerCase();
+        rows.push({key: sec.group, rec: r, text: it.text || '', st: v === 'yes' ? 'ok' : v === 'no' ? 'bad' : 'na',
+          remark: it.remark || '', photos: it.photos || [], saranan: envSaranan(it.text || '')});
+      });
+    }));
+  }
+  return {sections, rows, notes};
+}
+
+function ipcPctColor(p){ return p === null ? '#888' : p >= 90 ? '#137a46' : p >= 70 ? '#c99a00' : '#d9531e'; }
+function ipcPrestasi(p){ return p === null ? '—' : p >= 90 ? 'Baik' : p >= 70 ? 'Memuaskan' : 'Perlu Penambahbaikan'; }
+function ipcPhotoUrl(u){ return String(u || '').replace(/([?&]sz=)w\d+/, '$1w800'); }
+function uniq(arr){ return Array.from(new Set(arr.filter(Boolean))); }
+
+function buildIpcReportHtml(pre, recs){
+  const META = {
+    report:    {title: 'LAPORAN AUDIT PEMATUHAN PENGURUSAN PESAKIT MDRO', ok: 'Patuh', bad: 'Tidak Patuh', comp: 'Komponen', badItem: 'Penemuan (Item tidak patuh)'},
+    ggReport:  {title: 'LAPORAN AUDIT KEBERSIHAN PERSEKITARAN — GLO GERM', ok: 'Bersih', bad: 'Tidak Bersih', comp: 'Bahagian', badItem: 'Penemuan (Permukaan tidak bersih)'},
+    envReport: {title: 'LAPORAN ENVIRONMENT VISUAL AUDIT', ok: 'Patuh', bad: 'Tidak Patuh', comp: 'Bahagian', badItem: 'Penemuan (Item tidak patuh)'}
+  }[pre];
+  const c = REPORT_CFG[pre];
+  const E = escapeHtml;
+  const {sections, rows, notes} = normalizeForIpc(pre, recs);
+
+  // statistik per bahagian
+  const st = {};
+  sections.forEach(s => st[s.key] = {ok: 0, bad: 0});
+  rows.forEach(x => { if (x.st === 'ok') st[x.key].ok++; else if (x.st === 'bad') st[x.key].bad++; });
+  const usedSecs = sections.filter(s => st[s.key].ok + st[s.key].bad > 0);
+  const totOk = rows.filter(x => x.st === 'ok').length, totBad = rows.filter(x => x.st === 'bad').length;
+  const totApp = totOk + totBad;
+  const overall = totApp ? Math.round(totOk / totApp * 1000) / 10 : null;
+  const pctOf = k => { const a = st[k].ok + st[k].bad; return a ? Math.round(st[k].ok / a * 1000) / 10 : null; };
+
+  // maklumat kepala
+  const dates = uniq(recs.map(r => normDate(r.date))).sort();
+  const dateLabel = !dates.length ? '—' : dates.length === 1 ? fmtDMY(dates[0]) : `${fmtDMY(dates[0])} – ${fmtDMY(dates[dates.length-1])} (${dates.length} tarikh)`;
+  const wardSel = $(c.ward).value;
+  const wards = uniq(recs.map(r => r.ward + (r.discipline ? ' (' + r.discipline + ')' : '')));
+  const wardLabel = wardSel === 'ALL' ? (wards.join(', ') || 'Semua ward') : (wards.length === 1 ? wards[0] : wardSel);
+  const beds = uniq(recs.map(r => String(r.bed || '').trim()));
+  const bedSel = $(pre + 'BedFilter').value;
+  const bedLabel = bedSel !== 'ALL' ? beds.join(', ') : (beds.length ? (beds.length <= 8 ? beds.join(', ') : `${beds.length} bilik/katil`) : '—');
+  const auditors = uniq(recs.map(r => r.auditor));
+  const verifiers = uniq(recs.map(r => r.verifiedBy));
+  const depts = uniq(recs.map(r => r.department));
+  const orgs = pre === 'report' ? uniq(recs.flatMap(r => String(r.organism || '').split(',').map(s => s.trim()))) : [];
+  const applied = pre === 'ggReport' ? uniq(recs.map(r => normDate(r.dateApplied))).sort() : [];
+  const multiRec = recs.length > 1;
+  const multiDate = dates.length > 1;
+  const recTag = r => {
+    if (!multiRec) return '';
+    const parts = [];
+    if (r.bed) parts.push(String(r.bed).trim());
+    if (multiDate) parts.push(fmtDMY(normDate(r.date)));
+    if (wardSel === 'ALL') parts.unshift(r.ward);
+    return parts.length ? `<b>[${E(parts.join(' · '))}]</b> ` : '';
+  };
+
+  // jadual komponen
+  let lastPart = '';
+  const tblRows = usedSecs.map(s => {
+    let head = '';
+    if (s.part && s.part !== lastPart){
+      lastPart = s.part;
+      const ps = usedSecs.filter(x => x.part === s.part);
+      const ok = ps.reduce((n, x) => n + st[x.key].ok, 0), bad = ps.reduce((n, x) => n + st[x.key].bad, 0);
+      const p = ok + bad ? Math.round(ok / (ok + bad) * 1000) / 10 : null;
+      head = `<tr class="grp"><td>${E(s.part)}</td><td>${ok}</td><td>${bad}</td><td>${ok + bad}</td><td style="color:${ipcPctColor(p)}">${p === null ? '—' : p + '%'}</td></tr>`;
+    }
+    const p = pctOf(s.key);
+    return head + `<tr><td>${E(s.label)}</td><td>${st[s.key].ok}</td><td>${st[s.key].bad}</td><td>${st[s.key].ok + st[s.key].bad}</td><td style="color:${ipcPctColor(p)};font-weight:700">${p === null ? '—' : p + '%'}</td></tr>`;
+  }).join('');
+
+  // graf bar
+  const chart = usedSecs.map(s => {
+    const p = pctOf(s.key);
+    return `<div class="bc"><div class="bv" style="color:${ipcPctColor(p)}">${p === null ? '' : p}</div>
+      <div class="bt"><div class="bb" style="height:${p || 0}%;background:${ipcPctColor(p)}"></div></div>
+      <div class="bl">${E(s.short)}</div></div>`;
+  }).join('');
+  const chartLegend = usedSecs.map(s => `<span><b>${E(s.short)}</b> ${E(s.label.replace(/^\d+\.\s*/, ''))}</span>`).join('');
+
+  // penemuan
+  let bil = 0, badCount = 0;
+  const findRows = usedSecs.map(s => {
+    const bad = rows.filter(x => x.key === s.key && x.st === 'bad');
+    if (!bad.length) return '';
+    bil++; badCount += bad.length;
+    const list = bad.map(x => `<li>${recTag(x.rec)}${E(x.text)}${x.remark ? ` <span class="rm">— ${E(x.remark)}</span>` : ''}</li>`).join('');
+    const secNotes = notes.filter(n => n.key === s.key && bad.some(x => x.rec === n.rec))
+      .map(n => `<div class="note"><b>Catatan:</b> ${recTag(n.rec)}${E(n.text)}</div>`).join('');
+    const photos = bad.flatMap(x => (x.photos || []).map(u => `<img src="${E(ipcPhotoUrl(u))}" referrerpolicy="no-referrer" loading="eager" alt="">`)).join('');
+    const sar = uniq(bad.map(x => x.saranan));
+    const sarHtml = sar.length === 1 ? E(sar[0]) : '<ol>' + sar.map(t => `<li>${E(t)}</li>`).join('') + '</ol>';
+    return `<tr><td class="bil">${bil}</td>
+      <td>${s.part ? `<div class="sec">${E(s.part)} ·</div>` : ''}<div class="comp">${E(s.label)}</div>
+        <ol class="items">${list}</ol>${secNotes}${photos ? `<div class="ph">${photos}</div>` : ''}</td>
+      <td class="sar">${sarHtml}</td></tr>`;
+  }).join('');
+
+  const comments = uniq(recs.map(r => r.comments)).map(t => `<li>${E(t)}</li>`).join('');
+  const wardShort = wardSel === 'ALL' ? 'semua ward' : wardSel;
+  const summary = overall === null
+    ? 'Tiada item yang dinilai bagi pilihan ini.'
+    : `Pematuhan keseluruhan bagi ${E(wardShort)}${bedSel !== 'ALL' ? ' (bilik/katil ' + E(beds.join(', ')) + ')' : ''} ialah <b>${overall}%</b> (${ipcPrestasi(overall)}). ` +
+      (badCount ? `Sebanyak ${badCount} item ${META.bad.toLowerCase()} di atas memerlukan tindakan pembetulan dan audit semula.` : 'Tiada item ketidakpatuhan dikesan.');
+
+  const infoRows = [
+    ['Tarikh', dateLabel],
+    applied.length ? ['Tarikh Glo Germ diletakkan', applied.map(fmtDMY).join(', ')] : null,
+    ['Lokasi / Wad', wardLabel + (depts.length ? ' — ' + depts.join(', ') : '')],
+    ['Bilik / Katil', bedLabel],
+    orgs.length ? ['Organisma', orgs.join(', ')] : null,
+    ['Juruaudit', auditors.join(', ') || '—'],
+    ['Bilangan audit', String(recs.length)]
+  ].filter(Boolean).map(([k, v]) => `<div><b>${k}:</b> ${E(v)}</div>`).join('');
+
+  return `<!DOCTYPE html><html lang="ms"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${E(META.title)} — ${E(wardShort)} ${E(dateLabel)}</title>
+<style>
+  @page{size:A4;margin:12mm;}
+  *{box-sizing:border-box;}
+  body{font-family:"Segoe UI",Roboto,Arial,sans-serif;color:#222;font-size:11.5px;margin:0;padding:18px;background:#fff;}
+  .wrap{max-width:900px;margin:0 auto;}
+  .bar{position:sticky;top:0;background:#fff;padding:8px 0 12px;display:flex;gap:8px;z-index:5;}
+  .bar button{background:#137a46;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;}
+  h1{text-align:center;font-size:13px;margin:0 0 4px;letter-spacing:.02em;}
+  h2.t{text-align:center;font-size:12.5px;margin:0 0 14px;}
+  .info div{margin:2px 0;}
+  .score{border:2px solid #137a46;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:22px;margin:12px 0 16px;}
+  .score .big{font-size:30px;font-weight:800;}
+  h3{color:#137a46;font-size:12px;text-decoration:underline;margin:18px 0 8px;}
+  table{width:100%;border-collapse:collapse;}
+  th,td{border:1px solid #333;padding:6px 8px;vertical-align:top;}
+  th{background:#f3f3f3;text-align:left;font-size:11px;}
+  .ct td:not(:first-child),.ct th:not(:first-child){text-align:center;width:13%;}
+  tr.grp td{font-weight:800;background:#fafafa;}
+  .chart{display:flex;align-items:flex-end;gap:6px;height:170px;border-left:1px solid #999;border-bottom:1px solid #999;padding:0 6px;}
+  .bc{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;min-width:18px;}
+  .bv{font-size:9.5px;font-weight:800;}
+  .bt{width:100%;max-width:38px;height:130px;display:flex;align-items:flex-end;}
+  .bb{width:100%;border-radius:2px 2px 0 0;}
+  .bl{font-size:9.5px;margin-top:3px;color:#555;}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:10px;color:#444;margin-top:8px;}
+  .hint{font-size:10px;color:#555;margin-top:6px;}
+  .ft td.bil{width:34px;text-align:center;font-weight:700;}
+  .ft td.sar{width:36%;}
+  .sec{color:#666;font-size:10.5px;}
+  .comp{font-weight:800;margin:2px 0 4px;}
+  ol{margin:4px 0;padding-left:18px;} ol li{margin:3px 0;}
+  .rm{color:#555;font-style:italic;}
+  .note{margin:4px 0;font-size:11px;background:#f7f7f7;padding:4px 6px;border-radius:4px;}
+  .ph{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .ph img{width:118px;height:118px;object-fit:cover;border-radius:6px;border:1px solid #ccc;break-inside:avoid;}
+  .sign{display:flex;gap:40px;margin-top:34px;}
+  .sign>div{flex:1;} .line{border-bottom:1px solid #333;height:44px;margin:10px 0 6px;}
+  .sm{font-size:10.5px;color:#555;}
+  @media print{ .bar{display:none;} body{padding:0;} tr{break-inside:avoid;} .score,.chart{break-inside:avoid;} }
+</style></head><body><div class="wrap">
+<div class="bar"><button onclick="window.print()">🖨️ Cetak / Simpan PDF</button></div>
+<h1>HOSPITAL TENGKU PERMAISURI NORASHIKIN (HTPN), KAJANG</h1>
+<h2 class="t">${E(META.title)}</h2>
+<div class="info">${infoRows}</div>
+<div class="score" style="border-color:${ipcPctColor(overall)}">
+  <div class="big" style="color:${ipcPctColor(overall)}">${overall === null ? '—' : overall + '%'}</div>
+  <div><b>Pematuhan Keseluruhan</b><br>Prestasi: <b style="color:${ipcPctColor(overall)}">${ipcPrestasi(overall)}</b><br>
+  <span class="sm">${totOk} ${META.ok.toLowerCase()} / ${totApp} dinilai · ${totBad} ${META.bad.toLowerCase()} (N/A dikecualikan)</span></div>
+</div>
+<h3>Pematuhan Ikut ${META.comp}</h3>
+<table class="ct"><tr><th>${META.comp}</th><th>${META.ok}</th><th>${META.bad}</th><th>Dinilai</th><th>Pematuhan</th></tr>${tblRows || '<tr><td colspan="5">Tiada data.</td></tr>'}</table>
+<h3>Kadar Pematuhan Ikut ${META.comp} (Graf)</h3>
+<div class="chart">${chart}</div>
+<div class="legend">${chartLegend}</div>
+<div class="hint">Petunjuk: Hijau ≥90%, kuning 70–89%, merah &lt;70%.</div>
+<h3>Penemuan Tidak Patuh &amp; Saranan</h3>
+${findRows ? `<table class="ft"><tr><th>Bil</th><th>${META.badItem}</th><th>Saranan</th></tr>${findRows}</table>` : '<p>Tiada penemuan ketidakpatuhan. Tahniah!</p>'}
+${comments ? `<h3>Komen / Tindakan Juruaudit</h3><ul>${comments}</ul>` : ''}
+<h3>Ringkasan &amp; Saranan</h3>
+<p>${summary}</p>
+<div class="sign">
+  <div>Diaudit oleh:<div class="line"></div>${E(auditors.join(', '))}<div class="sm">Unit Kawalan Infeksi, HTPN Kajang</div></div>
+  <div>Disemak oleh:<div class="line"></div>${E(verifiers.join(', '))}<div class="sm">Ketua Unit Kawalan Infeksi, HTPN Kajang</div></div>
+</div>
+<p class="sm" style="margin-top:24px;">Dijana pada ${E(new Date().toLocaleString('ms-MY'))}</p>
+</div></body></html>`;
+}
+
+function openIpcReport(pre){
+  const btn = $(pre + 'IpcBtn');
+  // buka tetingkap serta-merta (elak popup blocker), isi kemudian
+  const w = window.open('', '_blank');
+  if (w){ try { w.document.write('<p style="font-family:sans-serif;padding:20px;">Menjana laporan…</p>'); } catch(e){} }
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Menjana...';
+  (async () => {
+    const c = REPORT_CFG[pre];
+    if (!(c.recs() || []).length){ try { await c.load(); } catch(e){} }
+    const recs = pre === 'report' ? reportFilteredRecords() : pre === 'ggReport' ? ggReportFilteredRecords() : envReportFilteredRecords();
+    if (!recs.length){
+      if (w) w.close();
+      showToast('Tiada audit untuk pilihan ward / tarikh / bilik ini', true);
+      return;
+    }
+    const html = buildIpcReportHtml(pre, recs);
+    const url = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
+    if (w){ w.location.href = url; }
+    else {
+      const a = document.createElement('a');
+      a.href = url; a.download = 'Laporan_Penemuan_' + ($(c.ward).value) + '.html';
+      document.body.appendChild(a); a.click(); a.remove();
+      showToast('Popup disekat — laporan dimuat turun sebagai fail HTML');
+    }
+  })().catch(err => { if (w) w.close(); showToast('Gagal jana laporan: ' + err.message, true); })
+     .finally(() => { btn.disabled = false; btn.textContent = orig; });
+}
+['report', 'ggReport', 'envReport'].forEach(pre => $(pre + 'IpcBtn').addEventListener('click', () => openIpcReport(pre)));
+
 function hasUnsavedWork(){
   if (auditMode === 'mdro'){
     return subAnswers.some(arr => arr.some(a => a !== null))
