@@ -182,6 +182,9 @@ input,textarea{font-family:inherit;}
 .q-bar{margin-bottom:16px;}
 .q-bar:last-child{margin-bottom:0;}
 .q-label{font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.35; margin-bottom:5px;}
+#reportPeriodModeSeg,#ggReportPeriodModeSeg,#envReportPeriodModeSeg{flex-wrap:wrap;}
+#reportPeriodModeSeg button,#ggReportPeriodModeSeg button,#envReportPeriodModeSeg button{flex:1 1 30%;}
+.range-row{display:flex;gap:8px;align-items:center;} .range-row select{flex:1;min-width:0;} .range-row span{font-size:13px;color:var(--ink-soft);}
 .apick-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
 .apick-btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;cursor:pointer;}
 .apick-count{font-size:12.5px;color:var(--ink-soft);margin-left:auto;}
@@ -846,11 +849,17 @@ body.gate-open{overflow:hidden;}
           <button type="button" class="plain" data-mode="month">Bulan</button>
           <button type="button" class="plain" data-mode="epidweek">Minggu Epid</button>
           <button type="button" class="plain" data-mode="date">Tarikh</button>
+          <button type="button" class="plain" data-mode="ewrange">Julat EW</button>
+          <button type="button" class="plain" data-mode="mrange">Julat Bulan</button>
         </div>
       </div>
       <div class="field" id="reportPeriodValueWrap" style="display:none;">
         <label id="reportPeriodValueLabel" for="reportPeriodValueSelect">Pilih bulan</label>
         <select id="reportPeriodValueSelect"></select>
+      </div>
+      <div class="field" id="reportRangeWrap" style="display:none;">
+        <label id="reportRangeLabel">Julat minggu epid</label>
+        <div class="range-row"><select id="reportRangeFrom"></select><span>hingga</span><select id="reportRangeTo"></select></div>
       </div>
       <div class="field">
         <label>Pilih audit untuk laporan</label>
@@ -1103,11 +1112,17 @@ body.gate-open{overflow:hidden;}
           <button type="button" class="plain" data-mode="month">Bulan</button>
           <button type="button" class="plain" data-mode="epidweek">Minggu Epid</button>
           <button type="button" class="plain" data-mode="date">Tarikh</button>
+          <button type="button" class="plain" data-mode="ewrange">Julat EW</button>
+          <button type="button" class="plain" data-mode="mrange">Julat Bulan</button>
         </div>
       </div>
       <div class="field" id="ggReportPeriodValueWrap" style="display:none;">
         <label id="ggReportPeriodValueLabel" for="ggReportPeriodValueSelect">Pilih bulan</label>
         <select id="ggReportPeriodValueSelect"></select>
+      </div>
+      <div class="field" id="ggReportRangeWrap" style="display:none;">
+        <label id="ggReportRangeLabel">Julat minggu epid</label>
+        <div class="range-row"><select id="ggReportRangeFrom"></select><span>hingga</span><select id="ggReportRangeTo"></select></div>
       </div>
       <div class="field">
         <label>Pilih audit untuk laporan</label>
@@ -1354,11 +1369,17 @@ body.gate-open{overflow:hidden;}
           <button type="button" class="plain" data-mode="month">Bulan</button>
           <button type="button" class="plain" data-mode="epidweek">Minggu Epid</button>
           <button type="button" class="plain" data-mode="date">Tarikh</button>
+          <button type="button" class="plain" data-mode="ewrange">Julat EW</button>
+          <button type="button" class="plain" data-mode="mrange">Julat Bulan</button>
         </div>
       </div>
       <div class="field" id="envReportPeriodValueWrap" style="display:none;">
         <label id="envReportPeriodValueLabel" for="envReportPeriodValueSelect">Pilih bulan</label>
         <select id="envReportPeriodValueSelect"></select>
+      </div>
+      <div class="field" id="envReportRangeWrap" style="display:none;">
+        <label id="envReportRangeLabel">Julat minggu epid</label>
+        <div class="range-row"><select id="envReportRangeFrom"></select><span>hingga</span><select id="envReportRangeTo"></select></div>
       </div>
       <div class="field">
         <label>Pilih audit untuk laporan</label>
@@ -5403,13 +5424,13 @@ function bedKey(b){ return String(b || '').trim().toUpperCase(); }
 const REPORT_CFG = {
   report:    { recs: () => lastRecords, load: () => loadDashboard(),    ward: 'reportWardFilter',
                mode: () => reportPeriodMode,    value: () => reportPeriodValue,
-               refreshPeriod: () => refreshReportPeriodOptions() },
+               refreshPeriod: () => refreshReportPeriodOptions(), setValue: v => { reportPeriodValue = v; } },
   ggReport:  { recs: () => ggRecords,   load: () => loadGgDashboard(),  ward: 'ggReportWardFilter',
                mode: () => ggReportPeriodMode,  value: () => ggReportPeriodValue,
-               refreshPeriod: () => ggRefreshPeriodOptions('ggReportPeriodValueSelect', ggReportPeriodMode, v => ggReportPeriodValue = v) },
+               refreshPeriod: () => ggRefreshPeriodOptions('ggReportPeriodValueSelect', ggReportPeriodMode, v => ggReportPeriodValue = v), setValue: v => { ggReportPeriodValue = v; } },
   envReport: { recs: () => envRecords,  load: () => loadEnvDashboard(), ward: 'envReportWardFilter',
                mode: () => envReportPeriodMode, value: () => envReportPeriodValue,
-               refreshPeriod: () => envRefreshPeriodOptions('envReportPeriodValueSelect', envReportPeriodMode, v => envReportPeriodValue = v) }
+               refreshPeriod: () => envRefreshPeriodOptions('envReportPeriodValueSelect', envReportPeriodMode, v => envReportPeriodValue = v), setValue: v => { envReportPeriodValue = v; } }
 };
 
 function reportWardRecs(pre){
@@ -5418,15 +5439,66 @@ function reportWardRecs(pre){
   const recs = c.recs() || [];
   return w === 'ALL' ? recs : recs.filter(r => r.ward === w);
 }
+// ---------- Julat tempoh (Julat EW / Julat Bulan) ----------
+const RANGE = { report: {from: '', to: ''}, ggReport: {from: '', to: ''}, envReport: {from: '', to: ''} };
+function isRangeMode(m){ return m === 'ewrange' || m === 'mrange'; }
+function rangeKeyOf(r, mode){
+  const d = normDate(r.date);
+  if (!d) return '';
+  if (mode === 'mrange') return d.slice(0, 7);
+  const ew = getEpidWeek(d);
+  return ew ? `${ew.year}-EW${String(ew.week).padStart(2,'0')}` : '';
+}
+function rangeLabelOf(k, mode){
+  if (mode === 'mrange'){ const [y, m] = k.split('-'); return MONTH_NAMES_MS[(+m) - 1] + ' ' + y; }
+  return k.replace('-', ' ');
+}
+function buildRangeOptions(pre){
+  const c = REPORT_CFG[pre];
+  const mode = c.mode();
+  const wrap = $(pre + 'RangeWrap');
+  if (!isRangeMode(mode)){ wrap.style.display = 'none'; return; }
+  $(pre + 'PeriodValueWrap').style.display = 'none';
+  c.setValue('');
+  wrap.style.display = 'block';
+  $(pre + 'RangeLabel').textContent = mode === 'mrange' ? 'Julat bulan' : 'Julat minggu epid';
+  const keys = Array.from(new Set(reportWardRecs(pre).map(r => rangeKeyOf(r, mode)).filter(Boolean))).sort();
+  const opts = keys.map(k => `<option value="${k}">${escapeHtml(rangeLabelOf(k, mode))}</option>`).join('');
+  const f = $(pre + 'RangeFrom'), t = $(pre + 'RangeTo');
+  f.innerHTML = opts; t.innerHTML = opts;
+  const st = RANGE[pre];
+  st.from = keys.includes(st.from) ? st.from : (keys[0] || '');
+  st.to = keys.includes(st.to) ? st.to : (keys[keys.length - 1] || '');
+  if (st.from > st.to){ const x = st.from; st.from = st.to; st.to = x; }
+  f.value = st.from; t.value = st.to;
+}
+Object.keys(RANGE).forEach(pre => {
+  ['From', 'To'].forEach(w => $(pre + 'Range' + w).addEventListener('change', () => {
+    const st = RANGE[pre];
+    st[w === 'From' ? 'from' : 'to'] = $(pre + 'Range' + w).value;
+    if (st.from > st.to){ // pastikan Dari <= Hingga
+      if (w === 'From'){ st.to = st.from; $(pre + 'RangeTo').value = st.to; }
+      else { st.from = st.to; $(pre + 'RangeFrom').value = st.from; }
+    }
+    refreshBedOptions(pre);
+  }));
+});
+
 // Senarai audit bertanda (checkbox): PICK[pre] = Set objek rekod yang ditanda; null = belum dibina
 const PICK = { report: null, ggReport: null, envReport: null };
 const PICK_SEEN = { report: new Set(), ggReport: new Set(), envReport: new Set() };
 function filterByBed(recs, pre){ // (nama lama dikekalkan) — tapis ikut audit yang ditanda
   const sel = PICK[pre];
-  if (!sel) return recs;
-  return recs.filter(r => sel.has(r));
+  const mode = REPORT_CFG[pre].mode();
+  const allowed = isRangeMode(mode) ? new Set(periodRecsFor(pre)) : null;
+  return recs.filter(r => (!allowed || allowed.has(r)) && (!sel || sel.has(r)));
 }
 function bedSuffix(pre){
+  const mode = REPORT_CFG[pre].mode();
+  const rl = isRangeMode(mode) && RANGE[pre].from ? ` · ${rangeLabelOf(RANGE[pre].from, mode)} – ${rangeLabelOf(RANGE[pre].to, mode)}` : '';
+  return rl + pickSuffix(pre);
+}
+function pickSuffix(pre){
   const sel = PICK[pre];
   if (!sel) return '';
   const all = periodRecsFor(pre);
@@ -5437,7 +5509,10 @@ function periodRecsFor(pre){
   const c = REPORT_CFG[pre];
   let recs = reportWardRecs(pre);
   const mode = c.mode(), val = c.value();
-  if (mode !== 'all' && val){
+  if (isRangeMode(mode)){
+    const {from, to} = RANGE[pre];
+    if (from && to) recs = recs.filter(r => { const k = rangeKeyOf(r, mode); return k && k >= from && k <= to; });
+  } else if (mode !== 'all' && val){
     recs = recs.filter(r => {
       if (pre === 'report' && mode === 'epidweek'){
         const ew = getEpidWeek(r.date);
@@ -5508,14 +5583,22 @@ async function initReportFilters(tab){
   const pre = tab === 'report' ? 'report' : tab === 'ggreport' ? 'ggReport' : 'envReport';
   const c = REPORT_CFG[pre];
   if (!(c.recs() || []).length){ try { await c.load(); } catch(e){} }
-  if (c.mode() !== 'all') c.refreshPeriod();
+  if (isRangeMode(c.mode())) buildRangeOptions(pre);
+  else if (c.mode() !== 'all') c.refreshPeriod();
   refreshBedOptions(pre);
 }
 Object.keys(REPORT_CFG).forEach(pre => {
   const c = REPORT_CFG[pre];
-  $(c.ward).addEventListener('change', () => { if (c.mode() !== 'all') c.refreshPeriod(); refreshBedOptions(pre); });
+  $(c.ward).addEventListener('change', () => {
+    if (isRangeMode(c.mode())) buildRangeOptions(pre); else if (c.mode() !== 'all') c.refreshPeriod();
+    refreshBedOptions(pre);
+  });
   // pendengar ini didaftar selepas pendengar asal, jadi mod/nilai tempoh sudah dikemas kini
-  $(pre + 'PeriodModeSeg').addEventListener('click', e => { if (e.target.closest('button[data-mode]')) refreshBedOptions(pre); });
+  $(pre + 'PeriodModeSeg').addEventListener('click', e => {
+    if (!e.target.closest('button[data-mode]')) return;
+    buildRangeOptions(pre);
+    refreshBedOptions(pre);
+  });
   $(pre + 'PeriodValueSelect').addEventListener('change', () => refreshBedOptions(pre));
 });
 
@@ -5797,8 +5880,8 @@ function buildIpcReportHtml(pre, recs){
     });
     g += `<line x1="${L}" x2="${W - R}" y1="${y(TREND_TARGET)}" y2="${y(TREND_TARGET)}" stroke="#E00000" stroke-width="1.5" stroke-dasharray="6 4"/>`;
     g += `<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="#999"/>`;
-    const legend = tr.map((p, pi) => `<span><i style="background:${SERIES_COL[pi % SERIES_COL.length]}"></i>${E(lblFn(p.k))}</span>`).join('') +
-      `<span><i style="background:none;border-top:2px dashed #E00000;height:0;margin-top:5px"></i>Sasaran ${TREND_TARGET}%</span>`;
+    const legend = tr.map((p, pi) => `<span><svg width="14" height="11"><rect width="14" height="11" fill="${SERIES_COL[pi % SERIES_COL.length]}"/></svg>${E(lblFn(p.k))}</span>`).join('') +
+      `<span><svg width="20" height="11"><line x1="0" x2="20" y1="6" y2="6" stroke="#E00000" stroke-width="2" stroke-dasharray="4 3"/></svg>Sasaran ${TREND_TARGET}%</span>`;
     const ttl = {report: 'AUDIT MDRO CHECKLIST', ggReport: 'AUDIT GLO GERM', envReport: 'ENVIRONMENT VISUAL AUDIT'}[pre];
     return `<div class="gbox"><div class="gttl">RINGKASAN TREND: ${ttl}</div>
       <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${g}</svg>
@@ -5806,7 +5889,8 @@ function buildIpcReportHtml(pre, recs){
       <div class="sm" style="margin-top:4px;">${trAll.length > MAXP ? `Graf menunjukkan ${MAXP} tempoh terkini (jadual di bawah papar semua)` : ''}</div></div>`;
   }
   const trM = trendFor(monKey), trW = trendFor(ewKey);
-  const defTrend = trM.length > 1 ? 'm' : 'w';
+  const pm = REPORT_CFG[pre].mode();
+  const defTrend = pm === 'ewrange' || pm === 'epidweek' ? 'w' : pm === 'mrange' ? 'm' : (trM.length > 1 ? 'm' : 'w');
   const trendHtml = !rows.length ? '' : `
 <h3>Trend Pematuhan</h3>
 <div class="tsw noprint"><label><input type="radio" name="tmode" value="m" ${defTrend === 'm' ? 'checked' : ''}> Bulanan</label>
@@ -5824,7 +5908,7 @@ function buildIpcReportHtml(pre, recs){
     : `Pematuhan keseluruhan bagi ${E(wardShort)}${bedSel !== 'ALL' ? ' (bilik/katil ' + E(beds.join(', ')) + ')' : ''} ialah <b>${overall}%</b> (${ipcPrestasi(overall)}). ` +
       (badCount ? `Sebanyak ${badCount} item ${META.bad.toLowerCase()} di atas memerlukan tindakan pembetulan dan audit semula.` : 'Tiada item ketidakpatuhan dikesan.');
 
-  const infoRows = [
+  const infoPairs = [
     ['Tarikh', dateLabel],
     applied.length ? ['Tarikh Glo Germ diletakkan', applied.map(fmtDMY).join(', ')] : null,
     ['Lokasi / Wad', wardLabel + (depts.length ? ' — ' + depts.join(', ') : '')],
@@ -5832,14 +5916,26 @@ function buildIpcReportHtml(pre, recs){
     orgs.length ? ['Organisma', orgs.join(', ')] : null,
     ['Juruaudit', auditors.join(', ') || '—'],
     ['Bilangan audit', String(recs.length)]
-  ].filter(Boolean).map(([k, v]) => `<div><b>${k}:</b> ${E(v)}</div>`).join('');
+  ].filter(Boolean);
+  const infoRows = infoPairs.map(([k, v]) => `<div><b>${k}:</b> ${E(v)}</div>`).join('');
+  IPC_LAST = { pre, META, infoPairs, overall, totOk, totBad, totApp, prestasi: ipcPrestasi(overall),
+    secs: usedSecs.map(s => ({key: s.key, label: s.label, part: s.part,
+      short: pre === 'report' ? (SHORT_MDRO[s.key] || s.label) : s.label.replace(/^\d+\.\s*/, ''),
+      ok: st[s.key].ok, bad: st[s.key].bad, pct: pctOf(s.key)})),
+    trM: trM.map(p => ({lbl: monLbl(p.k), pct: pctOk(p), n: p.recs.size, sec: Object.fromEntries(usedSecs.map(s => [s.key, pctOk(p.sec[s.key])]))})),
+    trW: trW.map(p => ({lbl: ewLbl(p.k), pct: pctOk(p), n: p.recs.size, sec: Object.fromEntries(usedSecs.map(s => [s.key, pctOk(p.sec[s.key])]))})),
+    finds: rows.filter(x => x.st === 'bad').map(x => ({sec: (usedSecs.find(s => s.key === x.key) || {}).label || '', date: fmtDMY(normDate(x.rec.date)),
+      ward: x.rec.ward || '', bed: String(x.rec.bed || ''), text: x.text, remark: x.remark, saranan: x.saranan, photos: x.photos || []})),
+    audits: recs.map(r => ({date: fmtDMY(normDate(r.date)), ward: r.ward || '', bed: String(r.bed || ''), auditor: r.auditor || '',
+      pct: (pre === 'ggReport' ? r.cleanPercent : r.compliancePercent)})),
+    defTrend, target: TREND_TARGET };
 
   return `<!DOCTYPE html><html lang="ms"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${E(META.title)} — ${E(wardShort)} ${E(dateLabel)}</title>
 <style>
   @page{size:A4;margin:12mm;}
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   body{font-family:"Segoe UI",Roboto,Arial,sans-serif;color:#222;font-size:11.5px;margin:0;padding:18px;background:#fff;}
   .wrap{max-width:900px;margin:0 auto;}
   .bar{position:sticky;top:0;background:#fff;padding:8px 0 12px;display:flex;gap:8px;z-index:5;}
@@ -5924,10 +6020,12 @@ function ipcModal(){
   m.id = 'ipcPreviewModal'; m.className = 'ipc-modal';
   m.innerHTML = `<div class="ipc-modal-bar"><b>Preview Laporan Penemuan</b>
       <button type="button" id="ipcPrintBtn" style="background:#137a46;color:#fff;">🖨️ Cetak / Simpan PDF</button>
+      <button type="button" id="ipcXlsBtn" style="background:#1D6F42;color:#fff;">📊 Muat turun Excel</button>
       <button type="button" id="ipcTabBtn" style="background:#eee;color:#222;">↗ Buka tab baharu</button>
       <button type="button" id="ipcCloseBtn" style="background:#B3402F;color:#fff;">✕ Tutup</button></div>
     <iframe id="ipcPreviewFrame" title="Preview laporan"></iframe>`;
   document.body.appendChild(m);
+  $('ipcXlsBtn').onclick = () => { try { downloadIpcExcel(); } catch(e){ showToast('Gagal jana Excel: ' + e.message, true); } };
   $('ipcCloseBtn').onclick = () => { m.classList.remove('show'); document.body.style.overflow = ''; };
   $('ipcPrintBtn').onclick = () => {
     const f = $('ipcPreviewFrame');
@@ -5962,6 +6060,228 @@ function openIpcReport(pre){
      .finally(() => { btn.disabled = false; btn.textContent = orig; });
 }
 ['report', 'ggReport', 'envReport'].forEach(pre => $(pre + 'IpcBtn').addEventListener('click', () => openIpcReport(pre)));
+
+// =====================================================================
+// EKSPORT EXCEL (.xlsx sebenar, dengan carta Excel) — tanpa library luar
+// =====================================================================
+let IPC_LAST = null;
+const XL = (() => {
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function zip(files){ // [{name, data:string}] -> Blob (store, tanpa mampatan)
+    const enc = new TextEncoder(); const parts = []; const cen = []; let off = 0;
+    files.forEach(f => {
+      const nm = enc.encode(f.name), d = enc.encode(f.data), crc = crc32(d);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, 0, true); h.setUint16(12, 0x21, true); h.setUint32(14, crc, true); h.setUint32(18, d.length, true);
+      h.setUint32(22, d.length, true); h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+      parts.push(h, nm, d);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+      c.setUint16(10, 0, true); c.setUint16(12, 0, true); c.setUint16(14, 0x21, true); c.setUint32(16, crc, true);
+      c.setUint32(20, d.length, true); c.setUint32(24, d.length, true); c.setUint16(28, nm.length, true);
+      c.setUint32(42, off, true);
+      cen.push(c, nm);
+      off += 30 + nm.length + d.length;
+    });
+    const cenSize = cen.reduce((n, x) => n + x.byteLength, 0);
+    const e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+    e.setUint32(12, cenSize, true); e.setUint32(16, off, true);
+    return new Blob([...parts, ...cen, e], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  }
+  const esc = v => String(v === null || v === undefined ? '' : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const col = i => { let s = ''; i++; while (i){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  // gaya: 0 biasa,1 tebal,2 header,3 sel,4 hijau,5 kuning,6 merah,7 tajuk,8 sel balut,9 sel tebal,10 pautan
+  const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="4"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><u/><sz val="11"/><color rgb="FF0563C1"/><name val="Calibri"/></font></fonts>
+<fills count="7"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFE699"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFE3F3EA"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFBF1D3"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFBE3DA"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="11">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
+<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>
+</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  function cellXml(ref, c){
+    if (c === null || c === undefined || c === '') return '';
+    if (typeof c !== 'object') c = {v: c};
+    const s = c.s ? ` s="${c.s}"` : '';
+    if (c.f) return `<c r="${ref}"${s} t="str"><f>${esc(c.f)}</f><v>${esc(c.v)}</v></c>`;
+    if (c.v === null || c.v === undefined || c.v === '') return c.s ? `<c r="${ref}"${s}/>` : '';
+    if (typeof c.v === 'number' && isFinite(c.v)) return `<c r="${ref}"${s}><v>${c.v}</v></c>`;
+    return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${esc(c.v)}</t></is></c>`;
+  }
+  function sheetXml(sh, hasDrawing){
+    const cols = (sh.widths || []).map((w, i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+    const rows = sh.rows.map((r, ri) => {
+      const cells = (r || []).map((c, ci) => cellXml(col(ci) + (ri + 1), c)).join('');
+      return `<row r="${ri + 1}">${cells}</row>`;
+    }).join('');
+    const merges = (sh.merges || []).length ? `<mergeCells count="${sh.merges.length}">${sh.merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '';
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetViews><sheetView workbookViewId="0"${sh.freeze ? '' : ''}/></sheetViews>
+${cols ? `<cols>${cols}</cols>` : ''}<sheetData>${rows}</sheetData>${merges}${hasDrawing ? '<drawing r:id="rId1"/>' : ''}</worksheet>`;
+  }
+  const NS_C = 'xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const titleXml = t => `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1400" b="1"/></a:pPr><a:r><a:rPr lang="en-US" sz="1400" b="1"/><a:t>${esc(t)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>`;
+  const strCache = arr => `<c:strCache><c:ptCount val="${arr.length}"/>${arr.map((v, i) => `<c:pt idx="${i}"><c:v>${esc(v)}</c:v></c:pt>`).join('')}</c:strCache>`;
+  const numCache = arr => `<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="${arr.length}"/>${arr.map((v, i) => v === null || v === undefined ? '' : `<c:pt idx="${i}"><c:v>${v}</c:v></c:pt>`).join('')}</c:numCache>`;
+  const dLbls = (show, pos) => `<c:dLbls>${pos ? `<c:dLblPos val="${pos}"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${show ? 1 : 0}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>`;
+  const fill = rgb => `<c:spPr><a:solidFill><a:srgbClr val="${rgb}"/></a:solidFill></c:spPr>`;
+  const lineSp = (rgb, w, dash) => `<c:spPr><a:ln w="${w}" cap="rnd"><a:solidFill><a:srgbClr val="${rgb}"/></a:solidFill>${dash ? '<a:prstDash val="dash"/>' : ''}<a:round/></a:ln></c:spPr>`;
+  const axes = (catId, valId) => `<c:catAx><c:axId val="${catId}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${valId}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>
+<c:valAx><c:axId val="${valId}"/><c:scaling><c:orientation val="minMax"/><c:max val="100"/><c:min val="0"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="E6E6E6"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${catId}"/><c:crosses val="autoZero"/><c:crossBetween val="between"/><c:majorUnit val="20"/></c:valAx>`;
+  const wrapChart = (title, plot) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace ${NS_C}><c:roundedCorners val="0"/><c:chart>${titleXml(title)}<c:autoTitleDeleted val="0"/><c:plotArea><c:layout/>${plot}</c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend><c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart></c:chartSpace>`;
+  // series: {name:{ref,val}, cat:{ref,vals}, val:{ref,vals}}
+  const serXml = (i, s, kind, rgb) => {
+    const tx = `<c:tx><c:strRef><c:f>${esc(s.name.ref)}</c:f>${strCache([s.name.val])}</c:strRef></c:tx>`;
+    const cat = `<c:cat><c:strRef><c:f>${esc(s.cat.ref)}</c:f>${strCache(s.cat.vals)}</c:strRef></c:cat>`;
+    const val = `<c:val><c:numRef><c:f>${esc(s.val.ref)}</c:f>${numCache(s.val.vals)}</c:numRef></c:val>`;
+    if (kind === 'bar') return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>${tx}${fill(rgb)}<c:invertIfNegative val="0"/>${dLbls(true, 'outEnd')}${cat}${val}</c:ser>`;
+    if (kind === 'target') return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>${tx}${lineSp('E00000', 19050, true)}<c:marker><c:symbol val="none"/></c:marker>${dLbls(false)}${cat}${val}<c:smooth val="0"/></c:ser>`;
+    return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>${tx}${lineSp('404040', 28575, false)}<c:marker><c:symbol val="circle"/><c:size val="7"/>${fill('137A46').replace('c:spPr', 'c:spPr')}</c:marker>${dLbls(true, 't')}${cat}${val}<c:smooth val="0"/></c:ser>`;
+  };
+  function columnChart(title, series, target){
+    const COLS = ['4472C4','ED7D31','A5A5A5','FFC000','5B9BD5','70AD47','264478','9E480E','636363','997300'];
+    const bars = series.map((s, i) => serXml(i, s, 'bar', COLS[i % COLS.length])).join('');
+    const tgt = target ? `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${serXml(series.length, target, 'target')}<c:marker val="1"/><c:axId val="501"/><c:axId val="502"/></c:lineChart>` : '';
+    return wrapChart(title, `<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>${bars}<c:gapWidth val="60"/><c:overlap val="0"/><c:axId val="501"/><c:axId val="502"/></c:barChart>${tgt}${axes(501, 502)}`);
+  }
+  function lineChart(title, main, target){
+    return wrapChart(title, `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${serXml(0, main, 'line')}${target ? serXml(1, target, 'target') : ''}<c:marker val="1"/><c:axId val="601"/><c:axId val="602"/></c:lineChart>${axes(601, 602)}`);
+  }
+  function drawingXml(anchors){
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">${anchors.map((a, i) => `
+<xdr:twoCellAnchor><xdr:from><xdr:col>${a.c1}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${a.r1}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>${a.c2}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${a.r2}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>
+<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${i + 2}" name="Chart ${i + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId${i + 1}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`).join('')}
+</xdr:wsDr>`;
+  }
+  // sheets: [{name, rows, widths, merges, charts:[{xml, c1,r1,c2,r2}]}]
+  function build(sheets){
+    const files = []; const ov = []; let chartN = 0, drawN = 0;
+    sheets.forEach((sh, si) => {
+      const hasD = (sh.charts || []).length > 0;
+      files.push({name: `xl/worksheets/sheet${si + 1}.xml`, data: sheetXml(sh, hasD)});
+      ov.push(`<Override PartName="/xl/worksheets/sheet${si + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
+      if (hasD){
+        drawN++;
+        files.push({name: `xl/worksheets/_rels/sheet${si + 1}.xml.rels`, data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${drawN}.xml"/></Relationships>`});
+        files.push({name: `xl/drawings/drawing${drawN}.xml`, data: drawingXml(sh.charts)});
+        ov.push(`<Override PartName="/xl/drawings/drawing${drawN}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`);
+        const rels = sh.charts.map((ch, ci) => { chartN++;
+          files.push({name: `xl/charts/chart${chartN}.xml`, data: ch.xml});
+          ov.push(`<Override PartName="/xl/charts/chart${chartN}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`);
+          return `<Relationship Id="rId${ci + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart${chartN}.xml"/>`;
+        }).join('');
+        files.push({name: `xl/drawings/_rels/drawing${drawN}.xml.rels`, data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`});
+      }
+    });
+    files.unshift(
+      {name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${ov.join('')}</Types>`},
+      {name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+      {name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((sh, i) => `<sheet name="${esc(sh.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`},
+      {name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((sh, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+      {name: 'xl/styles.xml', data: STYLES}
+    );
+    return zip(files);
+  }
+  return {build, col, columnChart, lineChart};
+})();
+
+function pctStyle(v){ return v === null || v === undefined ? 3 : v >= 90 ? 4 : v >= 70 ? 5 : 6; }
+
+function buildIpcWorkbook(D){
+  const H = 2, T = 7, C = 3, W = 8, B = 9;
+  const sheets = [];
+  // 1. Ringkasan
+  const r1 = [[{v: 'HOSPITAL TENGKU PERMAISURI NORASHIKIN (HTPN), KAJANG', s: T}], [{v: D.META.title, s: 1}], []];
+  D.infoPairs.forEach(([k, v]) => r1.push([{v: k, s: 1}, v]));
+  r1.push([{v: 'Pematuhan keseluruhan (%)', s: 1}, {v: D.overall, s: pctStyle(D.overall)}]);
+  r1.push([{v: 'Prestasi', s: 1}, D.prestasi]);
+  r1.push([{v: `${D.META.ok} / Dinilai`, s: 1}, `${D.totOk} / ${D.totApp} (${D.totBad} ${D.META.bad.toLowerCase()})`]);
+  r1.push([]);
+  const hdrRow = r1.length + 1;
+  r1.push([{v: D.META.comp, s: H}, {v: 'Label', s: H}, {v: D.META.ok, s: H}, {v: D.META.bad, s: H}, {v: 'Dinilai', s: H}, {v: 'Pematuhan (%)', s: H}]);
+  D.secs.forEach(s => r1.push([{v: (s.part ? s.part + ' · ' : '') + s.label, s: W}, {v: s.short, s: C}, {v: s.ok, s: C}, {v: s.bad, s: C}, {v: s.ok + s.bad, s: C}, {v: s.pct, s: pctStyle(s.pct)}]));
+  const n = D.secs.length, last = hdrRow + n;
+  sheets.push({name: 'Ringkasan', rows: r1, widths: [52, 22, 12, 12, 10, 14],
+    charts: n ? [{xml: XL.columnChart('Pematuhan Ikut ' + D.META.comp, [{
+      name: {ref: `'Ringkasan'!$F$${hdrRow}`, val: 'Pematuhan (%)'},
+      cat: {ref: `'Ringkasan'!$B$${hdrRow + 1}:$B$${last}`, vals: D.secs.map(s => s.short)},
+      val: {ref: `'Ringkasan'!$F$${hdrRow + 1}:$F$${last}`, vals: D.secs.map(s => s.pct)}}]), c1: 0, r1: last + 1, c2: 6, r2: last + 22}] : []});
+  // 2 & 3. Trend
+  [['Trend Bulanan', D.trM, 'BULAN'], ['Trend Minggu Epid', D.trW, 'MINGGU EPID']].forEach(([nm, tr, unit]) => {
+    const rows = [[{v: D.META.comp, s: H}, ...tr.map(p => ({v: p.lbl, s: H})), {v: `Sasaran (${D.target}%)`, s: H}]];
+    rows.push([{v: 'Keseluruhan (%)', s: B}, ...tr.map(p => ({v: p.pct, s: pctStyle(p.pct)})), {v: D.target, s: C}]);
+    D.secs.forEach(s => rows.push([{v: s.short, s: W}, ...tr.map(p => ({v: p.sec[s.key], s: pctStyle(p.sec[s.key])})), {v: D.target, s: C}]));
+    rows.push([{v: 'Bilangan audit', s: B}, ...tr.map(p => ({v: p.n, s: C}))]);
+    rows.push([{v: `Sasaran (%)`, s: B}, ...tr.map(() => ({v: D.target, s: C}))]);
+    const q = `'${nm}'`, m = tr.length, lc = XL.col(m), tc = XL.col(m + 1), lastR = 2 + D.secs.length;
+    const charts = [];
+    if (m){
+      const tRow = lastR + 4;
+      charts.push({xml: XL.lineChart(`PEMATUHAN KESELURUHAN IKUT ${unit}`,
+        {name: {ref: `${q}!$A$2`, val: 'Keseluruhan (%)'}, cat: {ref: `${q}!$B$1:$${lc}$1`, vals: tr.map(p => p.lbl)}, val: {ref: `${q}!$B$2:$${lc}$2`, vals: tr.map(p => p.pct)}},
+        {name: {ref: `${q}!$A$${lastR + 2}`, val: 'Sasaran (%)'}, cat: {ref: `${q}!$B$1:$${lc}$1`, vals: tr.map(p => p.lbl)}, val: {ref: `${q}!$B$${lastR + 2}:$${lc}$${lastR + 2}`, vals: tr.map(() => D.target)}}),
+        c1: 0, r1: tRow, c2: Math.max(8, m + 2), r2: tRow + 18});
+      const series = tr.map((p, i) => ({name: {ref: `${q}!$${XL.col(i + 1)}$1`, val: p.lbl},
+        cat: {ref: `${q}!$A$3:$A$${lastR}`, vals: D.secs.map(s => s.short)},
+        val: {ref: `${q}!$${XL.col(i + 1)}$3:$${XL.col(i + 1)}$${lastR}`, vals: D.secs.map(s => p.sec[s.key])}}));
+      charts.push({xml: XL.columnChart(`RINGKASAN TREND IKUT ${unit}`, series,
+        {name: {ref: `${q}!$${tc}$1`, val: `Sasaran (${D.target}%)`}, cat: {ref: `${q}!$A$3:$A$${lastR}`, vals: D.secs.map(s => s.short)},
+         val: {ref: `${q}!$${tc}$3:$${tc}$${lastR}`, vals: D.secs.map(() => D.target)}}),
+        c1: 0, r1: tRow + 20, c2: Math.max(12, m + 4), r2: tRow + 46});
+    }
+    sheets.push({name: nm, rows, widths: [30, ...tr.map(() => 11), 14], charts});
+  });
+  // 4. Penemuan
+  const maxPh = Math.min(8, Math.max(0, ...D.finds.map(f => f.photos.length)));
+  const fr = [[{v: 'Bil', s: H}, {v: D.META.comp, s: H}, {v: 'Tarikh', s: H}, {v: 'Ward', s: H}, {v: 'Bilik/Katil', s: H},
+    {v: 'Item ' + D.META.bad.toLowerCase(), s: H}, {v: 'Catatan', s: H}, {v: 'Saranan', s: H}, ...Array.from({length: maxPh}, (_, i) => ({v: 'Gambar ' + (i + 1), s: H}))]];
+  D.finds.forEach((f, i) => fr.push([{v: i + 1, s: C}, {v: f.sec, s: W}, {v: f.date, s: C}, {v: f.ward, s: C}, {v: f.bed, s: C},
+    {v: f.text, s: W}, {v: f.remark, s: W}, {v: f.saranan, s: W},
+    ...f.photos.slice(0, maxPh).map((u, k) => /^https?:/.test(u) ? {f: `HYPERLINK("${String(u).replace(/"/g, '')}","Lihat gambar ${k + 1}")`, v: `Lihat gambar ${k + 1}`, s: 10} : {v: '(gambar tempatan)', s: C})]));
+  if (!D.finds.length) fr.push([{v: 'Tiada penemuan ketidakpatuhan.', s: C}]);
+  sheets.push({name: 'Penemuan', rows: fr, widths: [6, 38, 12, 10, 14, 48, 26, 48, ...Array.from({length: maxPh}, () => 16)]});
+  // 5. Senarai audit
+  const ar = [[{v: 'Bil', s: H}, {v: 'Tarikh', s: H}, {v: 'Ward', s: H}, {v: 'Bilik/Katil', s: H}, {v: 'Juruaudit', s: H}, {v: 'Pematuhan (%)', s: H}]];
+  D.audits.forEach((a, i) => { const p = a.pct === '' || a.pct === null || isNaN(Number(a.pct)) ? null : Number(a.pct);
+    ar.push([{v: i + 1, s: C}, {v: a.date, s: C}, {v: a.ward, s: C}, {v: a.bed, s: C}, {v: a.auditor, s: C}, {v: p, s: pctStyle(p)}]); });
+  sheets.push({name: 'Senarai Audit', rows: ar, widths: [6, 12, 10, 16, 24, 14]});
+  return XL.build(sheets);
+}
+
+function downloadIpcExcel(){
+  if (!IPC_LAST){ showToast('Jana preview laporan dahulu', true); return; }
+  const blob = buildIpcWorkbook(IPC_LAST);
+  const tag = {report: 'MDRO', ggReport: 'GloGerm', envReport: 'Environment'}[IPC_LAST.pre];
+  const ward = (IPC_LAST.infoPairs.find(p => p[0] === 'Lokasi / Wad') || [, ''])[1].split(/[ ,—(]/)[0] || 'Semua';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Laporan_${tag}_${ward}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
 
 function hasUnsavedWork(){
   if (auditMode === 'mdro'){
